@@ -15,7 +15,17 @@ app.ws('/pay', (ws) => {
   });
 
   ws.addEventListener('message', (event) => {
-    console.info('Got message', event.data);
+    (async () => {
+      console.info('Got message', event.data);
+
+      // Wait for tx confirmation.
+      // StarkX Pay.
+      // Return message.
+      setTimeout(() => {
+        console.info('Sending...');
+        ws.send(JSON.stringify({ message: 'success' }));
+      }, 3500);
+    })();
   });
 
   ws.addEventListener('error', () => {
