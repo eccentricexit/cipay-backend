@@ -4,5 +4,10 @@ declare namespace NodeJS {
     SEC256K1_PRIVATE_KEY: string;
     PROJECT_ID: string;
     SERVER_PORT: string;
+    ALCHEMY_KEY: string;
+    ETHERSCAN_KEY: string;
+    INFURA_PROJECT_ID: string;
+    NETWORK: string;
+    TAX_ID: string;
   }
 }
