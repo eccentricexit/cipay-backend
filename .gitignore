@@ -30,3 +30,5 @@ dist
 # Misc
 .DS_Store
 .env
+
+kafka_*

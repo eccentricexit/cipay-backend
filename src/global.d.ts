@@ -9,5 +9,6 @@ declare namespace NodeJS {
     INFURA_PROJECT_ID: string;
     NETWORK: string;
     TAX_ID: string;
+    DOMAIN: string;
   }
 }
