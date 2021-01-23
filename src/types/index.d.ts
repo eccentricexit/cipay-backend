@@ -19,6 +19,11 @@ export interface Balance {
   updated: string;
 }
 
+export interface BackendResponse {
+  error?: BackendResponse;
+  message?: string;
+}
+
 export enum BackendResponseError {
   BrcodeNotFound = 'brcode-not-found',
   AmountTooSmallOrInvalid = 'amount-too-small-or-invalid',
@@ -26,9 +31,4 @@ export enum BackendResponseError {
   OutOfFunds = 'out-of-funds',
   InvalidPaymentStatus = 'invalid-payment-status',
   AllowChangeForbidden = 'payment-is-changeable',
-}
-
-export interface BackendResponse {
-  error?: BackendResponse;
-  message?: string;
 }

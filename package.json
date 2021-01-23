@@ -4,7 +4,7 @@
   "description": "Pay in BRL with your crypto.",
   "author": "Visus",
   "scripts": {
-    "start": "ts-node-dev src/index.ts",
+    "start": "ts-node-dev -r dotenv-safe/config src/index.ts",
     "prod": "ts-node src/index.ts",
     "lint:eslint": "eslint . --ext .ts,.tsx",
     "lint:prettier": "prettier --config .prettierrc 'src/**/*.ts' --check",
@@ -34,7 +34,6 @@
     "standard-version": "^9.0.0",
     "ts-jest": "~26.4.4",
     "ts-node": "^9.1.1",
-    "ts-node-dev": "^1.1.1",
     "tsutils": "~3.17.0",
     "typescript": "^4.0.5"
   },
@@ -46,7 +45,9 @@
     "express": "^4.17.1",
     "express-rate-limit": "^5.2.3",
     "express-slow-down": "^1.4.0",
+    "fetch-h2": "^2.5.1",
     "helmet": "^4.4.1",
+    "kafkajs": "^1.15.0",
     "starkbank": "^2.2.0",
     "tslib": "~2.0.3"
   },

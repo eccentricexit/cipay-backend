@@ -15,3 +15,28 @@ It uses [krakenjs](), an express framework.
 2- Run `npm run start`.
 
 Accessing the ksqlDB CLI: `docker exec -it ksqldb-cli ksql http://ksqldb-server:8088`
+
+### DB Bootstrap
+
+> TODO: Add ksql.queries.file to docker-compose file.
+> TODO: Materialize event stream
+
+```
+CREATE
+  STREAM
+    payment_requests_stream
+      (id VARCHAR, txHash VARCHAR, brcode VARCHAR, amount INTEGER, fromAddress VARCHAR)
+    WITH
+      (kafka_topic='payment_request', value_format='JSON');
+    EMIT CHANGES;
+
+CREATE
+  TABLE
+    payment_requests_table
+  AS
+    SELECT id,txHash,brCode,amount,fromAddress
+  FROM
+    payment_requests_stream
+  GROUP BY id
+  EMIT CHANGES;
+```
