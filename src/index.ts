@@ -1,55 +1,63 @@
 import * as dotenv from 'dotenv';
+import { Kafka } from 'kafkajs';
 import express from 'express';
-import expressWs from 'express-ws';
 import { ethers } from 'ethers';
 import starkbank from 'starkbank';
-import { Kafka } from 'kafkajs';
+
+// TODO: When the backend boots, before anything it should
+// check it's state (kafka) against starkbank and the blockchain,
+// resolving any pending states.
 
 // Configuration
 console.info(`Boot started, configuring libraries.`);
 dotenv.config({ path: '.env' });
-const { app } = expressWs(express());
+
+const kafka = new Kafka({
+  clientId: 'backend',
+  brokers: [`${process.env.KAFKA_HOSTNAME}:${process.env.KAFKA_BROKER_PORT}`],
+});
 
 starkbank.user = new starkbank.Project({
   environment: process.env.NODE_ENV,
   id: process.env.PROJECT_ID,
   privateKey: process.env.SEC256K1_PRIVATE_KEY,
 });
+const taxId = process.env.TAX_ID;
 
 const provider = ethers.getDefaultProvider(process.env.NETWORK, {
   alchemy: process.env.ALCHEMY_KEY,
   etherscan: process.env.ETHERSCAN_KEY,
   infura: process.env.INFURA_PROJECT_ID,
 });
-const taxId = process.env.TAX_ID;
 
-const kafka = new Kafka({
-  clientId: 'cipay',
-  brokers: [process.env.BROKER_URL],
-});
-const PAYMENT_TOPIC = 'pix-payment';
-const producer = kafka.producer();
-const consumer = kafka.consumer({ groupId: 'pix-payment-group' });
-
-// Boot.
-console.info(`Done. Booting...`);
 (async () => {
-  await producer.connect();
-  await consumer.connect();
-  await consumer.subscribe({ topic: PAYMENT_TOPIC });
+  console.info('Starting producer');
+  const producer = kafka.producer();
 
-  const STARKBANK_HOOK_ENDPOINT = '/starkbank-hook';
-  app.post(STARKBANK_HOOK_ENDPOINT, async (req, res) => {
+  console.info('Connecting');
+  try {
+    await producer.connect();
+  } catch (error) {
+    console.error(error);
+  }
+
+  console.info('Connected');
+  await producer.send({
+    topic: 'test-topic',
+    messages: [{ value: 'Hello KafkaJS user!' }],
+  });
+
+  const app = express();
+  app.get('/qr-payable', async (req, res) => {
     try {
-      const {
-        event: { log },
-      } = req.body;
-      const event = log['brcode-payment'];
+      const { qrCode } = req.body;
 
-      await producer.send({
-        topic: PAYMENT_TOPIC,
-        messages: [{ key: event.brcode, value: event }],
-      });
+      // TODO: Fetch QRCode payment amount;
+      // TODO: Check that payment amount is within threshold;
+      // TODO: Check that cipay has enough funds in starkbank;
+      // TODO: Check that the qrCode was not paid yet.
+      // Return results.
+
       res.status(200).send('success');
     } catch (error) {
       console.error(error);
@@ -57,77 +65,71 @@ console.info(`Done. Booting...`);
     }
   });
 
-  const connections = new Set();
-  app.ws('/pay', (ws) => {
-    connections.add(ws);
+  app.post('/request-payment', async (req, res) => {
+    try {
+      const { qrCode, txHash } = req.body;
 
-    ws.addEventListener('open', () => {
-      console.info(`Got connection opened`);
-    });
+      // TODO: Hash qrCode, txHash to get payment requestID.
+      // TODO: Check that this request was not made before.
 
-    ws.addEventListener('message', (event) => {
-      (async () => {
-        try {
-          const { txHash, qrCode } = JSON.parse(event.data);
-          console.info(`Got payment request.`);
-          console.info(`TxHash: ${txHash}`);
-          console.info(`qrCode: ${qrCode}`);
-          console.info('');
-          // TODO: Check if this txHash was already used in
-          // another payment.
+      // TODO: Post paymentID, qrCode, txHash and status waiting confirmation to kafka.
 
-          console.info('Waiting for confirmation...');
-          await provider.waitForTransaction(txHash, 1); // TODO: Update this to use OVM.
-          console.info('Tx Confirmed. Creating payment...');
-          // TODO: Mark as used.
-          // TODO: Check amount.
+      const CONFIRMATIONS_REQUIRED = 1;
+      const tx = await provider.waitForTransaction(
+        txHash,
+        CONFIRMATIONS_REQUIRED,
+      );
 
-          // TODO: Subscribe kafkajs to event logs. Watch
-          // for payment processing. Once it comes through,
-          // responde with a success message to the client.
-          await consumer.run({
-            eachMessage: async ({ message }) => {
-              // TODO stop consumer once we report back.
-              if (message.key !== qrCode) return;
+      // TODO: Fetch QRCode payment amount;
+      // TODO: Check that txAmount covers qrCode amount.
+      // TODO: Check that payment amount is within threshold;
+      // TODO: Check that cipay has enough funds in starkbank;
 
-              consumer.stop();
-              ws.send(JSON.stringify({ message: 'success' }));
-            },
-          });
+      // TODO: Post tx confirmed to kafka;
+      // TODO: Request that starkbank pays the qrCode.
+      // TODO: Post that payment request was made to kafka.
+      res.status(200).send('success');
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Error: (Please notify at vago.visus@pm.me)');
+    }
+  });
 
-          const { id: starkPaymentID } = (
-            await starkbank.brcodePayment.create([
-              {
-                taxId,
-                brcode: qrCode,
-                description: 'Cipay payment',
-                tags: ['cipay', 'pix', 'qrcode'],
-              },
-            ])
-          )[0];
-          console.info(
-            `Payment created: ${starkPaymentID}. Waiting for payment execution.`,
-          );
-          console.info('');
-        } catch (error) {
-          console.error(error);
-          ws.send(JSON.stringify({ message: 'error', error }));
-        }
-      })();
-    });
+  // Starkbank payment webhook.
+  const STARKBANK_HOOK_ENDPOINT = '/starkbank-hook';
+  app.post(STARKBANK_HOOK_ENDPOINT, async (req, res) => {
+    try {
+      const {
+        event: { log },
+      } = req.body;
+      const event = log['brcode-payment'];
+      // TODO: Parse starkbank message and post results to kafka.
 
-    ws.addEventListener('error', () => {
-      console.error('Error in websocket');
-    });
+      res.status(200).send('success');
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Error: (Please notify vago.visus@pm.me)');
+    }
+  });
 
-    ws.addEventListener('close', (event) => {
-      console.info('Closed ws connection:', event.code, event.reason);
-      connections.delete(ws);
-    });
+  app.get('/payment-status', async (req, res) => {
+    try {
+      const { qrCode, txHash, id } = req.body;
+
+      // TODO: Fetch QRCode payment amount;
+      // TODO: Check that payment amount is within threshold;
+      // TODO: Check that cipay has enough funds in starkbank;
+      // Return results.
+
+      res.status(200).send('success');
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Error: (Please notify at vago.visus@pm.me)');
+    }
   });
 
   // Start the server.
-  app.listen(process.env.SERVER_PORT);
+  const server = app.listen(process.env.SERVER_PORT);
   console.info('Server listening on PORT', process.env.SERVER_PORT);
 
   // Subscribe to Starbank webhooks
@@ -135,7 +137,20 @@ console.info(`Done. Booting...`);
     url: `https://${process.env.DOMAIN}${STARKBANK_HOOK_ENDPOINT}`,
     subscriptions: ['brcode-payment'],
   });
-
   console.info(`Subscribed to hook id: ${webhook.id}`);
   console.log(webhook);
+
+  process.on('SIGTERM', () => {
+    console.info('SIGTERM signal received.');
+
+    server.close(async () => {
+      console.info('Http server closed.');
+
+      await starkbank.webhook.delete(webhook.id);
+      console.info('Deleted starkbank webhook');
+
+      await producer.disconnect();
+      console.info('Producer stopped');
+    });
+  });
 })();
