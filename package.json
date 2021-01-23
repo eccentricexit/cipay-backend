@@ -44,6 +44,7 @@
     "dotenv-safe": "^8.2.0",
     "ethers": "^5.0.25",
     "express": "^4.17.1",
+    "helmet": "^4.4.1",
     "starkbank": "^2.2.0",
     "tslib": "~2.0.3"
   },
