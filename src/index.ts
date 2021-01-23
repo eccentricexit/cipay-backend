@@ -2,7 +2,8 @@ import * as dotenv from 'dotenv';
 import express from 'express';
 import starkbank from 'starkbank';
 import helmet from 'helmet';
-// import { ethers } from 'ethers';
+import slowDown from 'express-slow-down';
+import rateLimit from 'express-rate-limit';
 import { brcodePayable, requestPayment, starkbankHook } from './handlers';
 
 // TODO: Extract payment execution into a payment engine.
@@ -14,8 +15,6 @@ import { brcodePayable, requestPayment, starkbankHook } from './handlers';
 // Eventually, we should move this engine to its own containerized
 // application.
 
-// TODO: Add express-slow-down and express-rate-limit.
-
 // Configuration
 console.info(`Boot started, configuring libraries.`);
 dotenv.config({ path: '.env' });
@@ -26,17 +25,22 @@ starkbank.user = new starkbank.Project({
   privateKey: process.env.SEC256K1_PRIVATE_KEY,
 });
 
-// const provider = ethers.getDefaultProvider(process.env.NETWORK, {
-//   alchemy: process.env.ALCHEMY_KEY,
-//   etherscan: process.env.ETHERSCAN_KEY,
-//   infura: process.env.INFURA_PROJECT_ID,
-// });
-
 const STARKBANK_HOOK_ENDPOINT = '/starkbank-hook';
-
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000,
+  delayAfter: 100,
+  delayMs: 500,
+});
+const rateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
 (async () => {
   const app = express();
   app.use(helmet());
+  app.use(speedLimiter);
+  app.use(rateLimiter);
+
   app.get('/brcode-payable', brcodePayable(starkbank));
   app.post('/request-payment', requestPayment());
   app.post(STARKBANK_HOOK_ENDPOINT, starkbankHook);
