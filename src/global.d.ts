@@ -1,11 +1,12 @@
 declare namespace NodeJS {
   export interface ProcessEnv {
     NODE_ENV: 'sandbox' | 'production';
+    SERVER_PORT: string;
+    PAYMENT_LIMIT: string;
 
     // Web3
     SEC256K1_PRIVATE_KEY: string;
     PROJECT_ID: string;
-    SERVER_PORT: string;
     ALCHEMY_KEY: string;
     ETHERSCAN_KEY: string;
     INFURA_PROJECT_ID: string;
