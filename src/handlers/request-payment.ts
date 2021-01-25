@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { fetch } from 'fetch-h2';
 import { BigNumber, ethers } from 'ethers';
 import { Producer } from 'kafkajs';
-import starkbankType from 'starkbank';
 import {
   BrcodePayment,
   KafkaTopics,
@@ -10,7 +9,7 @@ import {
   ResponseError,
   TransferEventResult,
 } from '../types';
-import { erc20Interface } from '../bootstrap';
+import { erc20Interface, provider, starkbank } from '../bootstrap';
 import {
   ACCEPTED_TOKEN_ADDRESSES,
   DECIMAL_PLACES,
@@ -21,11 +20,10 @@ import {
 } from '../utils';
 import { isPayable } from './brcode-payable';
 
-export default (
-  producer: Producer,
-  provider: ethers.providers.JsonRpcProvider,
-  starkbank: starkbankType,
-) => async (req: Request, res: Response): Promise<void> => {
+export default (producer: Producer) => async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { txHash, brcode } = req.body;
     const id = ethers.utils.id(txHash + '-' + brcode);
