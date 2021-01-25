@@ -21,7 +21,7 @@ export const getHttpCodeForError = (error: ResponseError): number => {
   }
 };
 
-export const getMessageForError = (error: ResponseError): string => {
+const getMessageForError = (error: ResponseError): string => {
   switch (error) {
     case ResponseError.BrcodeNotFound:
       return 'Payment not found.';
@@ -42,6 +42,11 @@ export const getMessageForError = (error: ResponseError): string => {
   }
 };
 
+export const getResponseForError = (error: ResponseError): Response => ({
+  error,
+  message: getMessageForError(error),
+});
+
 export default (starkbank: starkbankType) => async (
   req: ExpressRequest,
   res: ExpressResponse,
@@ -53,10 +58,9 @@ export default (starkbank: starkbankType) => async (
     // i.e. a payment preview.
     res.send(200);
   else
-    res.status(getHttpCodeForError(previewOrError)).send({
-      status: previewOrError,
-      message: getMessageForError(previewOrError),
-    } as Response);
+    res
+      .status(getHttpCodeForError(previewOrError))
+      .send(getResponseForError(previewOrError));
 };
 
 export const isPayable = async (

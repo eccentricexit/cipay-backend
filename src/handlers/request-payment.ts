@@ -17,7 +17,11 @@ import {
   EXCHANGE_RATES,
   tokenAddrToIndex,
 } from '../utils';
-import { isPayable } from './brcode-payable';
+import {
+  getHttpCodeForError,
+  getResponseForError,
+  isPayable,
+} from './brcode-payable';
 
 export default (
   producer: Producer,
@@ -25,47 +29,38 @@ export default (
   starkbank: starkbankType,
 ) => async (req: Request, res: Response): Promise<void> => {
   try {
+    const { txHash, brcode } = req.body;
+    const id = ethers.utils.keccak256(txHash + '-' + brcode);
     const response = await (
       await fetch(
         `http://${process.env.KAFKA_HOSTNAME}:${process.env.KAFKA_KSQL_PORT}/query`,
         {
           method: 'POST',
           json: {
-            ksql: `SELECT * FROM payment_requests_table p WHERE p.id='0x123aaa';`,
+            ksql: `SELECT * FROM payment_requests_table p WHERE p.id='${id}';`,
           },
         },
       )
     ).json();
-    const id = '0x4564111';
-    const txHash =
-      '0x8c0033e8116eab2f6309a4b439d3f37bf6294d6262045f43b98c71f748c226ee';
-    const brcode = 'pixbr123';
-    const amount = 1000;
 
     const row = response[1];
     if (row) {
-      await producer.send({
-        topic: KafkaTopics.PaymentRequest,
-        messages: [
-          {
-            key: id,
-            value: JSON.stringify({
-              id,
-              txHash,
-              brcode,
-              amount,
-              status: PaymentRequestStatus.rejected,
-              reason: ResponseError.DuplicatePayment,
-            }),
-          },
-        ],
-      });
       res.status(409).send({
         status: ResponseError.DuplicatePayment,
         message: 'This payment already exists',
       });
       return;
     }
+
+    const previewOrError = await isPayable(starkbank, brcode);
+    if (typeof previewOrError === 'string') {
+      res
+        .status(getHttpCodeForError(previewOrError))
+        .send(getResponseForError(previewOrError));
+      return;
+    }
+    const paymentPreview = previewOrError;
+    const { amount } = paymentPreview;
 
     await producer.send({
       topic: KafkaTopics.PaymentRequest,
@@ -76,7 +71,6 @@ export default (
             id,
             txHash,
             brcode,
-            amount,
             status: PaymentRequestStatus.created,
           }),
         },
@@ -207,9 +201,6 @@ export default (
       });
       return;
     }
-
-    const paymentPreview = await isPayable(starkbank, brcode);
-    if (typeof paymentPreview === 'string') return;
 
     const tokenDecimalPlaces =
       DECIMAL_PLACES[tokenIndex] > 2
