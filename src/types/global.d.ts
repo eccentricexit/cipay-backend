@@ -11,7 +11,7 @@ declare namespace NodeJS {
     ETHERSCAN_KEY: string;
     INFURA_PROJECT_ID: string;
     NETWORK: string;
-    WALLET: string;
+    WALLET_ADDRESS: string;
     ACCEPTED_TOKEN_ADDRESSES: string;
     EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;

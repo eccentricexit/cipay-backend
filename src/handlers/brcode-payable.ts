@@ -26,9 +26,14 @@ export const isPayable = async (
   starkbank: starkbankType,
   brcode: string,
 ): Promise<ResponseError | BrcodePreview> => {
-  const paymentPreviews: BrcodePreview[] = await starkbank.brcodePreview.query({
+  const paymentPreviews: BrcodePreview[] = [];
+  const response = await starkbank.brcodePreview.query({
     brcodes: [brcode],
   });
+
+  for await (const preview of response) {
+    paymentPreviews.push(preview);
+  }
 
   if (!paymentPreviews || paymentPreviews.length === 0 || !paymentPreviews[0])
     return ResponseError.BrcodeNotFound;

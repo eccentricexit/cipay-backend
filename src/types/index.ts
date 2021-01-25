@@ -37,7 +37,7 @@ export interface BrcodePayment {
   transactionIds: [];
 }
 
-export interface Response {
+export interface BackendResponse {
   error?: ResponseError;
   message?: string;
 }

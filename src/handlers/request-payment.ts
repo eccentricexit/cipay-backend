@@ -28,7 +28,7 @@ export default (
 ) => async (req: Request, res: Response): Promise<void> => {
   try {
     const { txHash, brcode } = req.body;
-    const id = ethers.utils.keccak256(txHash + '-' + brcode);
+    const id = ethers.utils.id(txHash + '-' + brcode);
     const response = await (
       await fetch(
         `http://${process.env.KAFKA_HOSTNAME}:${process.env.KAFKA_KSQL_PORT}/query`,
@@ -169,7 +169,7 @@ export default (
       return;
     }
 
-    if (to !== process.env.WALLET) {
+    if (to !== process.env.WALLET_ADDRESS) {
       await producer.send({
         topic: KafkaTopics.PaymentRequest,
         messages: [

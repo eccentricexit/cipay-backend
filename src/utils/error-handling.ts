@@ -1,5 +1,4 @@
-import { Response } from 'fetch-h2';
-import { ResponseError, Response } from '../types';
+import { ResponseError, BackendResponse } from '../types';
 
 export const getHttpCodeForError = (error: ResponseError): number => {
   switch (error) {
@@ -35,7 +34,7 @@ const getMessageForError = (error: ResponseError): string => {
         process.env.PAYMENT_LIMIT,
       )} BRL are allowed`;
     case ResponseError.InvalidPaymentStatus:
-      return `Payment must be active but its status is ${status}`;
+      return `Invalid payment status`;
     case ResponseError.AllowChangeForbidden:
       return 'Changeable payments amounts are disallowed';
     case ResponseError.OutOfFunds:
@@ -55,7 +54,7 @@ const getMessageForError = (error: ResponseError): string => {
   }
 };
 
-export const getResponseForError = (error: ResponseError): Response => ({
+export const getResponseForError = (error: ResponseError): BackendResponse => ({
   error,
   message: getMessageForError(error),
 });
