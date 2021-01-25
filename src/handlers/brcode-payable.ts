@@ -1,84 +1,89 @@
-import {
-  BackendResponse,
-  BackendResponseError,
-  Balance,
-  BrcodePreview,
-} from '../types';
+import { Response, ResponseError, Balance, BrcodePreview } from '../types';
 import starkbankType from 'starkbank';
-import { Request, Response } from 'express';
+import {
+  Request as ExpressRequest,
+  Response as ExpressResponse,
+} from 'express';
+
+export const getHttpCodeForError = (error: ResponseError): number => {
+  switch (error) {
+    case ResponseError.BrcodeNotFound:
+      return 404;
+    case ResponseError.AmountTooSmallOrInvalid:
+    case ResponseError.AmountTooLarge:
+    case ResponseError.InvalidPaymentStatus:
+    case ResponseError.AllowChangeForbidden:
+      return 403;
+    case ResponseError.OutOfFunds:
+      return 503;
+    default:
+      return 500;
+  }
+};
+
+export const getMessageForError = (error: ResponseError): string => {
+  switch (error) {
+    case ResponseError.BrcodeNotFound:
+      return 'Payment not found.';
+    case ResponseError.AmountTooSmallOrInvalid:
+      return 'Payments without a specific amount or zero are not allowed.';
+    case ResponseError.AmountTooLarge:
+      return `Only payments of up to ${Number(
+        process.env.PAYMENT_LIMIT,
+      )} BRL are allowed`;
+    case ResponseError.InvalidPaymentStatus:
+      return `Payment must be active but its status is ${status}`;
+    case ResponseError.AllowChangeForbidden:
+      return 'Changeable payments amounts are disallowed';
+    case ResponseError.OutOfFunds:
+      return 'Not enough funds to to process this payment.';
+    default:
+      return 'An unexpected error occurred.';
+  }
+};
 
 export default (starkbank: starkbankType) => async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { brcode } = req.body;
-    const paymentPreviews: BrcodePreview[] = await starkbank.brcodePreview.query(
-      {
-        brcodes: [brcode],
-      },
-    );
+  req: ExpressRequest,
+  res: ExpressResponse,
+): Promise<void | BrcodePreview> => {
+  const { brcode } = req.body;
+  const previewOrError = await isPayable(starkbank, brcode);
 
-    if (
-      !paymentPreviews ||
-      paymentPreviews.length === 0 ||
-      !paymentPreviews[0]
-    ) {
-      res.status(404).send({
-        status: BackendResponseError.BrcodeNotFound,
-        message: 'Payment not found.',
-      } as BackendResponse);
-      return;
-    }
+  if (typeof previewOrError !== 'string')
+    // i.e. a payment preview.
+    res.send(200);
+  else
+    res.status(getHttpCodeForError(previewOrError)).send({
+      status: previewOrError,
+      message: getMessageForError(previewOrError),
+    } as Response);
+};
 
-    // Business logic.
-    const paymentPreview = paymentPreviews[0];
-    if (paymentPreview.amount <= 0) {
-      res.status(403).send({
-        status: BackendResponseError.AmountTooSmallOrInvalid,
-        message: 'Payments without a specific amount or zero are not allowed.',
-      } as BackendResponse);
-      return;
-    }
+export const isPayable = async (
+  starkbank: starkbankType,
+  brcode: string,
+): Promise<ResponseError | BrcodePreview> => {
+  const paymentPreviews: BrcodePreview[] = await starkbank.brcodePreview.query({
+    brcodes: [brcode],
+  });
 
-    if (paymentPreview.status != 'active') {
-      res.status(403).send({
-        status: BackendResponseError.InvalidPaymentStatus,
-        message: `Payment must be active but its status is ${status}`,
-      } as BackendResponse);
-      return;
-    }
+  if (!paymentPreviews || paymentPreviews.length === 0 || !paymentPreviews[0])
+    return ResponseError.BrcodeNotFound;
 
-    if (paymentPreview.allowChange != false) {
-      res.status(403).send({
-        status: BackendResponseError.AllowChangeForbidden,
-        message: 'Changeable payments are disallowed',
-      } as BackendResponse);
-      return;
-    }
+  const paymentPreview = paymentPreviews[0];
+  if (paymentPreview.amount <= 0) return ResponseError.AmountTooSmallOrInvalid;
 
-    if (paymentPreview.amount > Number(process.env.PAYMENT_LIMIT) * 100) {
-      res.status(403).send({
-        status: BackendResponseError.AmountTooLarge,
-        message: `Only payments of up to ${Number(
-          process.env.PAYMENT_LIMIT,
-        )} BRL are allowed`,
-      } as BackendResponse);
-      return;
-    }
+  if (paymentPreview.status != 'active')
+    return ResponseError.InvalidPaymentStatus;
 
-    const balance: Balance = await starkbank.balance.get();
-    if (balance.amount < paymentPreview.amount) {
-      res.status(403).send({
-        status: BackendResponseError.OutOfFunds,
-        message: 'Cipay cannot aford to process this payment.',
-      } as BackendResponse);
-      return;
-    }
+  if (paymentPreview.allowChange != false)
+    return ResponseError.AllowChangeForbidden;
 
-    res.status(200).send();
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error: (Please notify at vago.visus@pm.me)');
-  }
+  if (paymentPreview.amount > Number(process.env.PAYMENT_LIMIT) * 100)
+    return ResponseError.AmountTooLarge;
+
+  const balance: Balance = await starkbank.balance.get();
+  if (balance.amount < paymentPreview.amount) return ResponseError.OutOfFunds;
+
+  return paymentPreview;
 };

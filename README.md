@@ -15,3 +15,32 @@ It uses [krakenjs](), an express framework.
 2- Run `npm run start`.
 
 Accessing the ksqlDB CLI: `docker exec -it ksqldb-cli ksql http://ksqldb-server:8088`
+
+### DB Bootstrap
+
+> TODO: Run the following queries automatically when `docker-compose up` is called.
+
+```
+CREATE
+  STREAM IF NOT EXISTS
+    PAYMENT_REQUESTS_STREAM
+      (ID STRING, TXHASH STRING, BRCODE STRING, AMOUNT INTEGER, FROMADDRESS STRING, STATUS STRING)
+    WITH
+      (KAFKA_TOPIC='payment_requests', KEY_FORMAT='KAFKA', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='JSON');
+
+CREATE
+  TABLE IF NOT EXISTS
+    payment_requests_table
+  AS
+    SELECT
+      id,
+      LATEST_BY_OFFSET(txHash) AS txHash,
+      LATEST_BY_OFFSET(brcode) AS brcode,
+      LATEST_BY_OFFSET(amount) AS amount,
+      LATEST_BY_OFFSET(fromAddress) AS fromAddress,
+      LATEST_BY_OFFSET(status) AS status
+  FROM
+    payment_requests_stream
+  GROUP BY id
+  EMIT CHANGES;
+```
