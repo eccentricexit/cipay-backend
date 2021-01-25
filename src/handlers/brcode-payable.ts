@@ -1,51 +1,10 @@
-import { Response, ResponseError, Balance, BrcodePreview } from '../types';
+import { ResponseError, Balance, BrcodePreview } from '../types';
 import starkbankType from 'starkbank';
 import {
   Request as ExpressRequest,
   Response as ExpressResponse,
 } from 'express';
-
-export const getHttpCodeForError = (error: ResponseError): number => {
-  switch (error) {
-    case ResponseError.BrcodeNotFound:
-      return 404;
-    case ResponseError.AmountTooSmallOrInvalid:
-    case ResponseError.AmountTooLarge:
-    case ResponseError.InvalidPaymentStatus:
-    case ResponseError.AllowChangeForbidden:
-      return 403;
-    case ResponseError.OutOfFunds:
-      return 503;
-    default:
-      return 500;
-  }
-};
-
-const getMessageForError = (error: ResponseError): string => {
-  switch (error) {
-    case ResponseError.BrcodeNotFound:
-      return 'Payment not found.';
-    case ResponseError.AmountTooSmallOrInvalid:
-      return 'Payments without a specific amount or zero are not allowed.';
-    case ResponseError.AmountTooLarge:
-      return `Only payments of up to ${Number(
-        process.env.PAYMENT_LIMIT,
-      )} BRL are allowed`;
-    case ResponseError.InvalidPaymentStatus:
-      return `Payment must be active but its status is ${status}`;
-    case ResponseError.AllowChangeForbidden:
-      return 'Changeable payments amounts are disallowed';
-    case ResponseError.OutOfFunds:
-      return 'Not enough funds to to process this payment.';
-    default:
-      return 'An unexpected error occurred.';
-  }
-};
-
-export const getResponseForError = (error: ResponseError): Response => ({
-  error,
-  message: getMessageForError(error),
-});
+import { getHttpCodeForError, getResponseForError } from '../utils';
 
 export default (starkbank: starkbankType) => async (
   req: ExpressRequest,

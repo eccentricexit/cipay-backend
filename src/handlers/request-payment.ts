@@ -15,13 +15,11 @@ import {
   ACCEPTED_TOKEN_ADDRESSES,
   DECIMAL_PLACES,
   EXCHANGE_RATES,
-  tokenAddrToIndex,
-} from '../utils';
-import {
   getHttpCodeForError,
   getResponseForError,
-  isPayable,
-} from './brcode-payable';
+  tokenAddrToIndex,
+} from '../utils';
+import { isPayable } from './brcode-payable';
 
 export default (
   producer: Producer,
@@ -45,10 +43,9 @@ export default (
 
     const row = response[1];
     if (row) {
-      res.status(409).send({
-        status: ResponseError.DuplicatePayment,
-        message: 'This payment already exists',
-      });
+      res
+        .status(getHttpCodeForError(ResponseError.DuplicatePayment))
+        .send(getHttpCodeForError(ResponseError.DuplicatePayment));
       return;
     }
 
@@ -136,10 +133,9 @@ export default (
           },
         ],
       });
-      res.status(400).send({
-        status: ResponseError.InvalidToken,
-        message: 'The token used to pay the transaction is not accepted.',
-      });
+      res
+        .status(getHttpCodeForError(ResponseError.InvalidToken))
+        .send(getResponseForError(ResponseError.InvalidToken));
       return;
     }
 
@@ -167,10 +163,9 @@ export default (
           },
         ],
       });
-      res.status(400).send({
-        status: ResponseError.MultipleTransfers,
-        message: 'This invalid transaction.',
-      });
+      res
+        .status(getHttpCodeForError(ResponseError.MultipleTransfers))
+        .send(getResponseForError(ResponseError.MultipleTransfers));
       return;
     }
 
@@ -195,10 +190,9 @@ export default (
           },
         ],
       });
-      res.status(400).send({
-        status: ResponseError.InvalidDestination,
-        message: 'Unexpected destination address.',
-      });
+      res
+        .status(getHttpCodeForError(ResponseError.InvalidDestination))
+        .send(getResponseForError(ResponseError.InvalidDestination));
       return;
     }
 
@@ -232,10 +226,9 @@ export default (
           },
         ],
       });
-      res.status(400).send({
-        status: ResponseError.NotEnoughFunds,
-        message: 'The user did not send enough funds to cover the transaction.',
-      });
+      res
+        .status(getHttpCodeForError(ResponseError.NotEnoughFunds))
+        .send(getResponseForError(ResponseError.NotEnoughFunds));
     }
 
     const payment: BrcodePayment = (
