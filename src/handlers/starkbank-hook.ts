@@ -2,8 +2,14 @@ import { Request, Response } from 'express';
 
 export default () => async (req: Request, res: Response): Promise<void> => {
   try {
-    // TODO: Check signature to ensure tha starkbank sent the message.
-    // TODO: Parse starkbank message and post results to kafka.
+    console.info('Got webhook');
+    console.info(req);
+    console.info('');
+    try {
+      console.info(await req.body());
+    } catch (err) {
+      console.error(err);
+    }
 
     res.status(200).send('success');
   } catch (error) {

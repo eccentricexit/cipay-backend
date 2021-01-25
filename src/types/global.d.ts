@@ -5,7 +5,6 @@ declare namespace NodeJS {
     PAYMENT_LIMIT: string;
 
     // Web3
-    SEC256K1_PRIVATE_KEY: string;
     PROJECT_ID: string;
     ALCHEMY_KEY: string;
     ETHERSCAN_KEY: string;
@@ -19,6 +18,8 @@ declare namespace NodeJS {
     // Starkbank
     TAX_ID: string;
     DOMAIN: string;
+    STARKBANK_PUBLIC_KEY: string;
+    SEC256K1_PRIVATE_KEY: string;
 
     // KAFKA
     KAFKA_HOSTNAME: string;
