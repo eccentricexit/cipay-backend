@@ -1,4 +1,4 @@
-import { ResponseError, Balance, BrcodePreview } from '../types';
+import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import starkbankType from 'starkbank';
 import {
   Request as ExpressRequest,
@@ -50,7 +50,7 @@ export const isPayable = async (
   if (paymentPreview.amount > Number(process.env.PAYMENT_LIMIT) * 100)
     return ResponseError.AmountTooLarge;
 
-  const balance: Balance = await starkbank.balance.get();
+  const balance: StarkbankBalance = await starkbank.balance.get();
   if (balance.amount < paymentPreview.amount) return ResponseError.OutOfFunds;
 
   return paymentPreview;

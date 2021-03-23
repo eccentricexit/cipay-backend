@@ -14,16 +14,12 @@ declare namespace NodeJS {
     ACCEPTED_TOKEN_ADDRESSES: string;
     EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
+    CONFIRMATIONS_REQUIRED: string;
 
     // Starkbank
     TAX_ID: string;
     DOMAIN: string;
     STARKBANK_PUBLIC_KEY: string;
     SEC256K1_PRIVATE_KEY: string;
-
-    // KAFKA
-    KAFKA_HOSTNAME: string;
-    KAFKA_KSQL_PORT: string;
-    KAFKA_BROKER_PORT: string;
   }
 }

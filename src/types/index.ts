@@ -14,13 +14,6 @@ export interface BrcodePreview {
   reconciliationId: string;
 }
 
-export interface Balance {
-  id: string;
-  amount: number;
-  currency: string;
-  updated: string;
-}
-
 export interface BrcodePayment {
   id: string;
   brcode: string;
@@ -36,6 +29,15 @@ export interface BrcodePayment {
   created: string;
   transactionIds: [];
 }
+
+
+export interface StarkbankBalance {
+  id: string;
+  amount: number;
+  currency: string;
+  updated: string;
+}
+
 
 export interface BackendResponse {
   error?: ResponseError;
@@ -68,10 +70,6 @@ export enum PaymentRequestStatus {
   rejected, // These should be used for failed payments that do not warrant refund.
   failed, // This is pending a refund.
   refunded, // This payment request failed and the client was refunded.
-  processing, // Waiting bank payment.
+  processing, // Waiting fiat payment.
   success, // Request processed.
-}
-
-export enum KafkaTopics {
-  PaymentRequest = 'payment_request',
 }
