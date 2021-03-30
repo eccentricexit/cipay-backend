@@ -5,20 +5,18 @@ declare namespace NodeJS {
     PAYMENT_LIMIT: string;
 
     // Web3
-    PROJECT_ID: string;
-    ALCHEMY_KEY: string;
-    ETHERSCAN_KEY: string;
-    INFURA_PROJECT_ID: string;
-    NETWORK: string;
+    JSON_RPC_ENDPOINT: string;
     WALLET_ADDRESS: string;
     ACCEPTED_TOKEN_ADDRESSES: string;
     EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
     CONFIRMATIONS_REQUIRED: string;
+    META_TX_PROXY_ADDRESS: string;
 
     // Starkbank
     TAX_ID: string;
     DOMAIN: string;
+    PROJECT_ID: string;
     STARKBANK_PUBLIC_KEY: string;
     SEC256K1_PRIVATE_KEY: string;
   }

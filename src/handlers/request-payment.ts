@@ -1,14 +1,52 @@
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
+import starkbankType from 'starkbank';
 
-export default () => async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+import { ResponseError } from '../types';
+import { getHttpCodeForError, getResponseForError } from '../utils';
+import { isPayable } from './brcode-payable';
+
+export default (
+  metaTxProxy: ethers.Contract,
+  starkbank: starkbankType,
+) => async (req: Request, res: Response): Promise<void> => {
   try {
-    const { request, brcode } = req.body;
+    const {
+      web3: {
+        signature,
+        typedData: { domain, types, message },
+      },
+      brcode,
+    } = req.body;
 
-    // TODO: Verify signature.
-    // TODO: Verify nonce.
+    const address = ethers.utils.verifyTypedData(
+      domain,
+      types,
+      message,
+      signature,
+    );
+
+    // TODO: Verify address is whitelisted.
+
+    const [nonce, previewOrError] = await Promise.all([
+      metaTxProxy.nonces(address),
+      isPayable(starkbank, brcode),
+    ]);
+
+    if (nonce.toString() !== message.nonce) {
+      res
+        .status(getHttpCodeForError(ResponseError.InvalidNonce))
+        .send(getResponseForError(ResponseError.InvalidNonce));
+      return;
+    }
+
+    if (typeof previewOrError === 'string') {
+      res
+        .status(getHttpCodeForError(previewOrError))
+        .send(getResponseForError(previewOrError));
+      return;
+    }
+
     // TODO: Verify it was not already received.
     // TODO: Verify the amount is payable.
 

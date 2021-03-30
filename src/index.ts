@@ -4,7 +4,9 @@ import slowDown from 'express-slow-down';
 import rateLimit from 'express-rate-limit';
 
 import { brcodePayable, requestPayment } from './handlers';
-import {  starkbank } from './bootstrap';
+import { starkbank, provider } from './bootstrap';
+import metaTxProxyAbi from './abis/metaTxProxy.json';
+import { ethers } from 'ethers';
 
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
@@ -16,15 +18,24 @@ const rateLimiter = rateLimit({
   max: 100,
 });
 
-;(async () => {
+(async () => {
   const app = express();
 
   app.use(helmet());
   app.use(speedLimiter);
   app.use(rateLimiter);
+  app.use(express.json());
+
+  const signer = provider.getSigner();
+
+  const metaTxProxy = new ethers.Contract(
+    process.env.META_TX_PROXY_ADDRESS || '',
+    metaTxProxyAbi,
+    signer,
+  );
 
   app.get('/brcode-payable', brcodePayable(starkbank));
-  app.post('/request-payment', requestPayment());
+  app.post('/request-payment', requestPayment(metaTxProxy, starkbank));
 
   // Start the server.
   const server = app.listen(process.env.SERVER_PORT);

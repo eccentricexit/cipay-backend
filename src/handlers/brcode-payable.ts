@@ -1,14 +1,11 @@
 import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import starkbankType from 'starkbank';
-import {
-  Request as ExpressRequest,
-  Response as ExpressResponse,
-} from 'express';
+import { Request, Response } from 'express';
 import { getHttpCodeForError, getResponseForError } from '../utils';
 
 export default (starkbank: starkbankType) => async (
-  req: ExpressRequest,
-  res: ExpressResponse,
+  req: Request,
+  res: Response,
 ): Promise<void | BrcodePreview> => {
   const { brcode } = req.body;
   const previewOrError = await isPayable(starkbank, brcode);

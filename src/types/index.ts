@@ -30,14 +30,12 @@ export interface BrcodePayment {
   transactionIds: [];
 }
 
-
 export interface StarkbankBalance {
   id: string;
   amount: number;
   currency: string;
   updated: string;
 }
-
 
 export interface BackendResponse {
   error?: ResponseError;
@@ -62,6 +60,7 @@ export enum ResponseError {
   InvalidDestination = 'invalid-destination',
   InvalidToken = 'invalid-token',
   NotEnoughFunds = 'not-enough-funds',
+  InvalidNonce = 'invalid-nonce',
 }
 
 export enum PaymentRequestStatus {

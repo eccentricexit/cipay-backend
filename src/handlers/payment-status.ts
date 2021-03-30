@@ -1,12 +1,7 @@
 import { Request, Response } from 'express';
 
-export default () => async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export default () => async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.body;
-
     // TODO: Fetch payment request status and return.
 
     res.status(200).send();
