@@ -26,7 +26,7 @@ const rateLimiter = rateLimit({
   app.use(rateLimiter);
   app.use(express.json());
 
-  const signer = provider.getSigner();
+  const signer = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
 
   const metaTxProxy = new ethers.Contract(
     process.env.META_TX_PROXY_ADDRESS || '',

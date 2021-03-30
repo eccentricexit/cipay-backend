@@ -53,7 +53,11 @@ export default (
     // TODO: Save payment request.
     // TODO: Submit transaction to relay proxy.
 
-    res.status(200).send();
+    const tx = await metaTxProxy.execute(message, signature);
+    await tx.wait();
+    res.status(200).send({
+      hash: tx.hash,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send('Error: (Please notify at vago.visus@pm.me)');

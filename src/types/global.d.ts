@@ -12,6 +12,7 @@ declare namespace NodeJS {
     DECIMAL_PLACES: string;
     CONFIRMATIONS_REQUIRED: string;
     META_TX_PROXY_ADDRESS: string;
+    RELAYER_PRIVATE_KEY: string;
 
     // Starkbank
     TAX_ID: string;
