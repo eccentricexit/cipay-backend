@@ -1,6 +1,7 @@
-import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import starkbankType from 'starkbank';
 import { Request, Response } from 'express';
+
+import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import { getHttpCodeForError, getResponseForError } from '../utils';
 
 export default (starkbank: starkbankType) => async (

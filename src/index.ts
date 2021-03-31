@@ -2,11 +2,11 @@ import express from 'express';
 import helmet from 'helmet';
 import slowDown from 'express-slow-down';
 import rateLimit from 'express-rate-limit';
+import { ethers } from 'ethers';
 
 import { brcodePayable, requestPayment } from './handlers';
 import { starkbank, provider } from './bootstrap';
 import metaTxProxyAbi from './abis/metaTxProxy.json';
-import { ethers } from 'ethers';
 
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000,
