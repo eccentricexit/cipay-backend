@@ -7,6 +7,7 @@ export const getHttpCodeForError = (error: ResponseError): number => {
     case ResponseError.InvalidDestination:
     case ResponseError.NotEnoughFunds:
     case ResponseError.InvalidNonce:
+    case ResponseError.FailedSigValidation:
       return 400;
     case ResponseError.BrcodeNotFound:
       return 404;
@@ -52,6 +53,8 @@ const getMessageForError = (error: ResponseError): string => {
       return 'The tokens used for this payment were sent to an unexpected address.';
     case ResponseError.InvalidNonce:
       return 'The nonce provided does not match the required nonce in the meta tx relay contract.';
+    case ResponseError.FailedSigValidation:
+      return 'The address recovered from the signature does not match the claimed address';
     default:
       throw new Error(`Unhandled response error: ${error}`);
   }

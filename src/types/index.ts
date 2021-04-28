@@ -61,6 +61,7 @@ export enum ResponseError {
   InvalidToken = 'invalid-token',
   NotEnoughFunds = 'not-enough-funds',
   InvalidNonce = 'invalid-nonce',
+  FailedSigValidation = 'failed-sig-validation',
 }
 
 export enum PaymentRequestStatus {

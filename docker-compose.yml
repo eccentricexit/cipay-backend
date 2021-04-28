@@ -1,11 +1,17 @@
-version: '3'
+version: "3"
 
 services:
-  postgres:
-    image: postgres:13.1
-    env_file:
-      - .env
+  mongo:
+    image: mongo:4.4.4
+    container_name: host.docker.internal
+    restart: always
+    networks:
+      - app-network
     volumes:
-      - ./db:/docker-entrypoint-initdb.d/
+      - ./data/db:/data/db
     ports:
-      - 5432:5432
+      - "27017:27017"
+
+networks:
+  app-network:
+    driver: bridge

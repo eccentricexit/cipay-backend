@@ -1,50 +1,70 @@
-import express from 'express';
-import helmet from 'helmet';
-import slowDown from 'express-slow-down';
-import rateLimit from 'express-rate-limit';
-import { ethers } from 'ethers';
+import util from 'util';
 
-import { brcodePayable, requestPayment } from './handlers';
-import { starkbank, provider } from './bootstrap';
-import metaTxProxyAbi from './abis/metaTxProxy.json';
+import logger from './logger';
+import SafeMongooseConnection from './lib/safe-mongoose-connection';
+import app from './app';
 
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000,
-  delayAfter: 100,
-  delayMs: 500,
-});
-const rateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
-
-(async () => {
-  const app = express();
-
-  app.use(helmet());
-  app.use(speedLimiter);
-  app.use(rateLimiter);
-  app.use(express.json());
-
-  const signer = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
-
-  const metaTxProxy = new ethers.Contract(
-    process.env.META_TX_PROXY_ADDRESS || '',
-    metaTxProxyAbi,
-    signer,
-  );
-
-  app.get('/brcode-payable', brcodePayable(starkbank));
-  app.post('/request-payment', requestPayment(metaTxProxy, starkbank));
-
-  // Start the server.
-  const server = app.listen(process.env.SERVER_PORT);
-  console.info('Server listening on PORT', process.env.SERVER_PORT);
-
-  // Graceful shutdown.
-  process.on('SIGINT', () => {
-    server.close(async () => {
-      console.info('Http server closed.');
+const safeMongooseConnection = new SafeMongooseConnection({
+  mongoUrl: process.env.MONGO_URL,
+  debugCallback: (
+    collectionName: string,
+    method: string,
+    query: unknown,
+  ): void => {
+    const message = `${collectionName}.${method}(${util.inspect(query, {
+      colors: true,
+      depth: null,
+    })})`;
+    logger.log({
+      level: 'silly',
+      message,
+      consoleLoggerOptions: { label: 'MONGO' },
     });
+  },
+  onStartConnection: (mongoUrl) =>
+    logger.info(`Connecting to MongoDB at ${mongoUrl}`),
+  onConnectionError: (error, mongoUrl) =>
+    logger.log({
+      level: 'error',
+      message: `Could not connect to MongoDB at ${mongoUrl}`,
+      error,
+    }),
+  onConnectionRetry: (mongoUrl) =>
+    logger.info(`Retrying to MongoDB at ${mongoUrl}`),
+});
+
+// Start the server.
+logger.info('Starting the server');
+const serve = () =>
+  app.listen(process.env.SERVER_PORT, () => {
+    logger.info(`Server listening on PORT ${process.env.SERVER_PORT}`);
   });
-})();
+
+if (process.env.MONGO_URL == null) {
+  logger.error('MONGO_URL not specified in environment');
+  process.exit(1);
+} else {
+  safeMongooseConnection.connect((mongoUrl) => {
+    logger.info(`Connected to MongoDB at ${mongoUrl}`);
+    serve();
+  });
+}
+
+// Close the Mongoose connection, when receiving SIGINT
+process.on('SIGINT', () => {
+  console.log('\n'); /* eslint-disable-line */
+  logger.info('Gracefully shutting down');
+  logger.info('Closing the MongoDB connection');
+  safeMongooseConnection.close((err) => {
+    if (err) {
+      logger.log({
+        level: 'error',
+        message: 'Error shutting closing mongo connection',
+        error: err,
+      });
+    } else {
+      logger.info('Mongo connection closed successfully');
+    }
+    process.exit(0);
+  }, true);
+});

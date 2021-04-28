@@ -1,29 +1,42 @@
 import starkbankType from 'starkbank';
-import { Request, Response } from 'express';
+import { Request, RequestHandler, Response } from 'express';
+import Joi from '@hapi/joi';
 
 import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import { getHttpCodeForError, getResponseForError } from '../utils';
+import requestMiddleware from '../middleware/request-middleware';
 
-export default (starkbank: starkbankType) => async (
-  req: Request,
-  res: Response,
-): Promise<void | BrcodePreview> => {
-  const { brcode } = req.body;
-  const previewOrError = await isPayable(starkbank, brcode);
+const brcodePayableSchema = Joi.object().keys({
+  brcode: Joi.string().required(),
+});
 
-  if (typeof previewOrError !== 'string')
-    // i.e. a payment preview.
-    res.send(200);
-  else
-    res
-      .status(getHttpCodeForError(previewOrError))
-      .send(getResponseForError(previewOrError));
-};
+export default function buildBrcodePayableController(
+  starkbank: starkbankType,
+): RequestHandler {
+  return requestMiddleware(
+    async function brcodePayableController(
+      req: Request,
+      res: Response,
+    ): Promise<void | BrcodePreview> {
+      const { brcode } = req.body;
+      const previewOrError = await isPayable(starkbank, brcode);
 
-export const isPayable = async (
+      if (typeof previewOrError !== 'string')
+        // i.e. a payment preview.
+        res.send(200);
+      else
+        res
+          .status(getHttpCodeForError(previewOrError))
+          .json(getResponseForError(previewOrError));
+    },
+    { validation: { body: brcodePayableSchema } },
+  );
+}
+
+export async function isPayable(
   starkbank: starkbankType,
   brcode: string,
-): Promise<ResponseError | BrcodePreview> => {
+): Promise<ResponseError | BrcodePreview> {
   const paymentPreviews: BrcodePreview[] = [];
   const response = await starkbank.brcodePreview.query({
     brcodes: [brcode],
@@ -52,4 +65,4 @@ export const isPayable = async (
   if (balance.amount < paymentPreview.amount) return ResponseError.OutOfFunds;
 
   return paymentPreview;
-};
+}
