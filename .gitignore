@@ -31,4 +31,5 @@ dist
 .DS_Store
 .env
 
-kafka_*
+data
+logs
