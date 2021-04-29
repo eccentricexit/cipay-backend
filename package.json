@@ -6,6 +6,7 @@
   "scripts": {
     "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node -r dotenv-safe/config' src/index.ts",
     "prod": "ts-node -r dotenv-safe/config src/index.ts",
+    "generate-brcode": "node -r dotenv-safe/config tools/generate-brcode",
     "lint:eslint": "eslint . --ext .ts,.tsx",
     "lint:prettier": "prettier --config .prettierrc 'src/**/*.ts' --check",
     "lint:secrets": "secretlint \"**/*\"",

@@ -15,16 +15,28 @@ export interface IPaymentRequest extends ITimeStampedDocument {
   rate: string;
   /** The current state of the payment. */
   status: PaymentRequestStatus;
+  /** The transaction hash of the token transfer. */
+  txHash: string;
+  /** The tax ID (CPF or CNPJ) of the receiver */
+  receiverTaxId: string
+  /** Payment description */
+  description: string
+  /** The number of BRL cents asked in the brcode */
+  brcodeAmount: number
 }
 
 type IPaymentRequestModel = Model<IPaymentRequest>;
 
 const schema = new Schema<IPaymentRequest>({
-  brcode: { type: String, index: true, required: true },
+  brcode: { type: String, index: true, required: true, unique: true },
   payerAddr: { type: String, index: true, required: true },
   coin: { type: String, index: true, required: true },
-  rate: { type: String, index: true, required: true },
+  rate: { type: String, required: true },
   status: { type: String, index: true, required: true },
+  txHash: { type: String, index: true, required: true },
+  receiverTaxId: { type: String, index: true, required: true },
+  description: { type: String, required: true },
+  brcodeAmount: { type: Number, required: true },
 });
 
 // Add timestamp plugin for createdAt and updatedAt in miliseconds from epoch

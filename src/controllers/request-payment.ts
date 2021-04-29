@@ -4,9 +4,10 @@ import starkbankType from 'starkbank';
 import Joi from '@hapi/joi';
 
 import requestMiddleware from '../middleware/request-middleware';
-import { BrcodePreview, ResponseError } from '../types';
-import { getHttpCodeForError, getResponseForError } from '../utils';
+import { BrcodePreview, PaymentRequestStatus, ResponseError } from '../types';
+import { ACCEPTED_TOKEN_ADDRESSES, getHttpCodeForError, getResponseForError, tokenAddrToRate } from '../utils';
 import { isPayable } from './brcode-payable';
+import { PaymentRequest } from '../models';
 
 const requestPaymentSchema = Joi.object().keys({
   brcode: Joi.string().required(),
@@ -47,6 +48,12 @@ const requestPaymentSchema = Joi.object().keys({
     .required(),
 });
 
+/**
+ * Builds a handler to allow BRL payments with crypto.
+ * @param metaTxProxy The contract to relay meta txes to.
+ * @param starkbank Starkbank instance with funds to pay a brcode.
+ * @returns The request handler
+ */
 export default function buildRequestPaymentController(
   metaTxProxy: ethers.Contract,
   starkbank: starkbankType,
@@ -73,18 +80,24 @@ export default function buildRequestPaymentController(
           signature,
         );
 
-        if (claimedAddr.toLowerCase() !== recoveredAddr.toLowerCase()) {
+        if (ethers.utils.getAddress(claimedAddr) !== recoveredAddr.toLowerCase()) {
           res
             .status(getHttpCodeForError(ResponseError.FailedSigValidation))
             .json(getResponseForError(ResponseError.FailedSigValidation));
           return;
         }
 
-        // TODO: Verify address is whitelisted.
+        const { to: tokenAddress } = message
+        if (!ACCEPTED_TOKEN_ADDRESSES.includes(ethers.utils.getAddress(tokenAddress))){
+          res
+            .status(getHttpCodeForError(ResponseError.InvalidToken))
+            .json(getResponseForError(ResponseError.InvalidToken));
+          return;
+        }
 
         const [nonce, previewOrError] = await Promise.all([
           metaTxProxy.nonces(recoveredAddr),
-          isPayable(starkbank, brcode),
+          isPayable(starkbank, brcode)
         ]);
 
         if (nonce.toString() !== message.nonce) {
@@ -101,17 +114,20 @@ export default function buildRequestPaymentController(
           return;
         }
 
-        // TODO: Verify it was not already received.
-
-        // TODO: Save payment request.
-        // TODO: Submit transaction to relay proxy.
-
-        // const tx = await metaTxProxy.execute(message, signature);
-        // await tx.wait();
-        // res.status(200).send({
-        //   hash: tx.hash,
-        // });
-        res.status(200).send();
+        const tx = await metaTxProxy.execute(message, signature);
+        const paymentRequest = new PaymentRequest({
+          brcode,
+          payerAddr: recoveredAddr,
+          coin: tokenAddress,
+          rate: tokenAddrToRate[tokenAddress],
+          status: PaymentRequestStatus.created,
+          txHash: tx.hash,
+          receiverTaxId: previewOrError.taxId,
+          description: previewOrError.description,
+          brcodeAmount: previewOrError.amount,
+        });
+        await paymentRequest.save()
+        res.status(200).json(paymentRequest);
       } catch (error) {
         console.error(error);
         res.status(500).send('Error: (Please notify at vago.visus@pm.me)');

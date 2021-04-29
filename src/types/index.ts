@@ -12,6 +12,7 @@ export interface BrcodePreview {
   allowChange: boolean;
   amount: number;
   reconciliationId: string;
+  description: string;
 }
 
 export interface BrcodePayment {

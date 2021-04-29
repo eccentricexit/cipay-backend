@@ -13,3 +13,11 @@ export const tokenAddrToIndex = ACCEPTED_TOKEN_ADDRESSES.reduce(
   (acc, curr, i) => ({ ...acc, [curr]: i }),
   {},
 );
+export const tokenAddrToRate = ACCEPTED_TOKEN_ADDRESSES.reduce(
+  (acc, curr, i) => ({ ...acc, [curr]: EXCHANGE_RATES[i] }),
+  {},
+);
+export const tokenAddrToDecimals = ACCEPTED_TOKEN_ADDRESSES.reduce(
+  (acc, curr, i) => ({ ...acc, [curr]: DECIMAL_PLACES[i] }),
+  {},
+);

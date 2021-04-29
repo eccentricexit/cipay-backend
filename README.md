@@ -1,5 +1,3 @@
-# DEPRECATED SEE MONOREPO FOR NEW ARCHITECTURE
-
 # Backend
 
 This service takes a meta transaction (transfering ETH from user to the service) + PIX qrcode and pays the QR Code.
