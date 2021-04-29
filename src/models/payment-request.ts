@@ -18,11 +18,13 @@ export interface IPaymentRequest extends ITimeStampedDocument {
   /** The transaction hash of the token transfer. */
   txHash: string;
   /** The tax ID (CPF or CNPJ) of the receiver */
-  receiverTaxId: string
+  receiverTaxId: string;
   /** Payment description */
-  description: string
+  description: string;
   /** The number of BRL cents asked in the brcode */
-  brcodeAmount: number
+  brcodeAmount: number;
+  /** The starkbank payment id, if any */
+  starkbankPaymentId: string;
 }
 
 type IPaymentRequestModel = Model<IPaymentRequest>;
@@ -37,6 +39,7 @@ const schema = new Schema<IPaymentRequest>({
   receiverTaxId: { type: String, index: true, required: true },
   description: { type: String, required: true },
   brcodeAmount: { type: Number, required: true },
+  starkbankPaymentId: { type: String, index: true, required: true },
 });
 
 // Add timestamp plugin for createdAt and updatedAt in miliseconds from epoch

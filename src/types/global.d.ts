@@ -8,11 +8,12 @@ declare namespace NodeJS {
     JSON_RPC_ENDPOINT: string;
     WALLET_ADDRESS: string;
     ACCEPTED_TOKEN_ADDRESSES: string;
-    EXCHANGE_RATES: string;
+    TOKEN_BRL_EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
     CONFIRMATIONS_REQUIRED: string;
     META_TX_PROXY_ADDRESS: string;
     RELAYER_PRIVATE_KEY: string;
+    BASE_FEE_BRL: number;
 
     // Starkbank
     TAX_ID: string;

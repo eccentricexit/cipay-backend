@@ -5,6 +5,7 @@ import Joi from '@hapi/joi';
 import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import { getHttpCodeForError, getResponseForError } from '../utils';
 import requestMiddleware from '../middleware/request-middleware';
+import logger from '../logger';
 
 const brcodePayableSchema = Joi.object().keys({
   brcode: Joi.string().required(),
@@ -19,15 +20,27 @@ export default function buildBrcodePayableController(
       res: Response,
     ): Promise<void | BrcodePreview> {
       const { brcode } = req.body;
-      const previewOrError = await isPayable(starkbank, brcode);
+      try {
+        const previewOrError = await isPayable(starkbank, brcode);
 
-      if (typeof previewOrError !== 'string')
-        // i.e. a payment preview.
-        res.send(200);
-      else
-        res
-          .status(getHttpCodeForError(previewOrError))
-          .json(getResponseForError(previewOrError));
+        if (typeof previewOrError !== 'string')
+          // i.e. a payment preview.
+          res.send(200);
+        else
+          res
+            .status(getHttpCodeForError(previewOrError))
+            .json(getResponseForError(previewOrError));
+      } catch (error) {
+        logger.error({
+          level: 'error',
+          message: `BrcodePayableController: Error checking if brcode is payable: ${brcode}`,
+          error,
+        });
+        res.status(500).json({
+          error,
+          message: 'Error: (Please notify at vago.visus@pm.me)',
+        });
+      }
     },
     { validation: { body: brcodePayableSchema } },
   );

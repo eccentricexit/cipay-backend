@@ -74,3 +74,9 @@ export enum PaymentRequestStatus {
   processing, // Waiting fiat payment.
   success, // Request processed.
 }
+
+export interface Engine {
+  start: () => Promise<void>;
+  stop: () => void;
+  isRunning: () => boolean;
+}

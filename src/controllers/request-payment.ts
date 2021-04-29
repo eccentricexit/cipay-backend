@@ -5,9 +5,16 @@ import Joi from '@hapi/joi';
 
 import requestMiddleware from '../middleware/request-middleware';
 import { BrcodePreview, PaymentRequestStatus, ResponseError } from '../types';
-import { ACCEPTED_TOKEN_ADDRESSES, getHttpCodeForError, getResponseForError, tokenAddrToRate } from '../utils';
+import {
+  ACCEPTED_TOKEN_ADDRESSES,
+  getHttpCodeForError,
+  getResponseForError,
+  tokenAddrToRate,
+} from '../utils';
 import { isPayable } from './brcode-payable';
 import { PaymentRequest } from '../models';
+import logger from '../logger';
+import erc20Abi from '../abis/erc20.ovm.json';
 
 const requestPaymentSchema = Joi.object().keys({
   brcode: Joi.string().required(),
@@ -57,6 +64,7 @@ const requestPaymentSchema = Joi.object().keys({
 export default function buildRequestPaymentController(
   metaTxProxy: ethers.Contract,
   starkbank: starkbankType,
+  provider: ethers.providers.JsonRpcProvider,
 ): RequestHandler {
   return requestMiddleware(
     async function requestPaymentController(
@@ -73,6 +81,18 @@ export default function buildRequestPaymentController(
           brcode,
         } = req.body;
 
+        const { to: tokenAddress, data } = message;
+        if (
+          !ACCEPTED_TOKEN_ADDRESSES.includes(
+            ethers.utils.getAddress(tokenAddress),
+          )
+        ) {
+          res
+            .status(getHttpCodeForError(ResponseError.InvalidToken))
+            .json(getResponseForError(ResponseError.InvalidToken));
+          return;
+        }
+
         const recoveredAddr = ethers.utils.verifyTypedData(
           domain,
           types,
@@ -80,24 +100,18 @@ export default function buildRequestPaymentController(
           signature,
         );
 
-        if (ethers.utils.getAddress(claimedAddr) !== recoveredAddr.toLowerCase()) {
+        if (
+          ethers.utils.getAddress(claimedAddr) !== recoveredAddr.toLowerCase()
+        ) {
           res
             .status(getHttpCodeForError(ResponseError.FailedSigValidation))
             .json(getResponseForError(ResponseError.FailedSigValidation));
           return;
         }
 
-        const { to: tokenAddress } = message
-        if (!ACCEPTED_TOKEN_ADDRESSES.includes(ethers.utils.getAddress(tokenAddress))){
-          res
-            .status(getHttpCodeForError(ResponseError.InvalidToken))
-            .json(getResponseForError(ResponseError.InvalidToken));
-          return;
-        }
-
         const [nonce, previewOrError] = await Promise.all([
           metaTxProxy.nonces(recoveredAddr),
-          isPayable(starkbank, brcode)
+          isPayable(starkbank, brcode),
         ]);
 
         if (nonce.toString() !== message.nonce) {
@@ -114,6 +128,27 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        const erc20 = new ethers.Contract(tokenAddress, erc20Abi, provider);
+        const { amount: amountTokens } = erc20.interface.decodeFunctionData(
+          'transferFrom',
+          data,
+        );
+        const normalizedRate = ethers.BigNumber.from(
+          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
+        );
+        const transferAmountRequired = normalizedRate.mul(
+          ethers.BigNumber.from(previewOrError.amount).add(
+            ethers.BigNumber.from(process.env.BASE_FEE_BRL),
+          ),
+        );
+
+        if (ethers.BigNumber.from(amountTokens).lt(transferAmountRequired)) {
+          res
+            .status(getHttpCodeForError(ResponseError.NotEnoughFunds))
+            .json(getResponseForError(ResponseError.NotEnoughFunds));
+          return;
+        }
+
         const tx = await metaTxProxy.execute(message, signature);
         const paymentRequest = new PaymentRequest({
           brcode,
@@ -126,11 +161,20 @@ export default function buildRequestPaymentController(
           description: previewOrError.description,
           brcodeAmount: previewOrError.amount,
         });
-        await paymentRequest.save()
+        await paymentRequest.save();
         res.status(200).json(paymentRequest);
       } catch (error) {
-        console.error(error);
-        res.status(500).send('Error: (Please notify at vago.visus@pm.me)');
+        logger.error({
+          level: 'error',
+          message: `Failed to accept payment for request. ${JSON.stringify(
+            req.body,
+          )}`,
+          error,
+        });
+        res.status(500).json({
+          error,
+          message: 'Error: (Please notify at vago.visus@pm.me)',
+        });
       }
     },
     { validation: { body: requestPaymentSchema } },
