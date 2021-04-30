@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { ethers } from 'ethers';
 
 import { starkbank, provider } from './bootstrap';
-import metaTxProxyAbi from './abis/metaTxProxy.json';
+import metaTxProxyAbi from './abis/metaTxProxy.ovm.json';
 import {
   buildBrcodePayableController,
   buildRequestPaymentController,
   buildPaymentStatusController,
+  buildStarkbankWebhookController,
 } from './controllers';
 
 const signer = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
@@ -19,10 +20,12 @@ const metaTxProxy = new ethers.Contract(
 const router = Router();
 
 router.get('/v1/brcode-payable', buildBrcodePayableController(starkbank));
+router.get('/v1/payment-status', buildPaymentStatusController());
 router.post(
   '/v1/request-payment',
-  buildRequestPaymentController(metaTxProxy, starkbank),
+  buildRequestPaymentController(metaTxProxy, starkbank, provider),
 );
-router.get('/v1/payment-status', buildPaymentStatusController());
+
+router.post('/starkbank-webhook', buildStarkbankWebhookController());
 
 export default router;

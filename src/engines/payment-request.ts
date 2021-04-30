@@ -89,6 +89,7 @@ export default function paymentRequestEngine(
 
               paymentRequest.status = PaymentRequestStatus.processing;
               paymentRequest.starkbankPaymentId = brcodePayment.id;
+              paymentRequest.brcodeStatus = 'created';
 
               await paymentRequest.save();
             } catch (error) {

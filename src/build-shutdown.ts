@@ -1,5 +1,6 @@
 import { Server } from 'http';
 import delay from 'delay';
+import starkbankType from 'starkbank';
 
 import SafeMongooseConnection from './lib/safe-mongoose-connection';
 import logger from './logger';
@@ -16,9 +17,16 @@ const buildShutdown = (
   server: Server,
   safeMongooseConnection: SafeMongooseConnection,
   engines: Engine[],
-): (() => void) => () => {
-  console.log('\n'); /* eslint-disable-line */
-  logger.info('Gracefully shutting down');
+  {
+    starkbank,
+    webhook,
+  }: {
+    starkbank: starkbankType;
+    webhook: { id: string };
+  },
+): (() => void) => async () => {
+  logger.info('');
+  logger.info('Graceful shutdown started');
   logger.info('Shutting down express server...');
 
   // Bit of a callback hell here. TODO: Promisify this.
@@ -30,6 +38,11 @@ const buildShutdown = (
         error: expressErr,
       });
     } else logger.info('Server closed.');
+
+    // Dropping webhook.
+    logger.info('Deleting starkbank webhook...');
+    await starkbank.webhook.delete(webhook.id);
+    logger.info('Done.');
 
     logger.info('Shutting down engines.');
     engines.forEach((engine) => engine.stop());

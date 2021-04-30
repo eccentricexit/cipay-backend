@@ -48,33 +48,47 @@ function serve() {
 }
 
 let shutdown: () => void;
-try {
-  const paymentRequestEngines = ACCEPTED_TOKEN_ADDRESSES.map((tokenAddr) =>
-    paymentRequest(
-      starkbank,
-      provider,
-      new ethers.Contract(tokenAddr, erc20Abi, provider),
-      process.env.WALLET_ADDRESS,
-    ),
-  );
-  paymentRequestEngines.forEach((engine) => engine.start());
-
-  logger.info('Starting the server');
-  safeMongooseConnection.connect((mongoUrl) => {
-    logger.info(`Connected to MongoDB at ${mongoUrl}`);
-    server = serve();
-    shutdown = buildShutdown(
-      server,
-      safeMongooseConnection,
-      paymentRequestEngines,
+(async () => {
+  try {
+    const paymentRequestEngines = ACCEPTED_TOKEN_ADDRESSES.map((tokenAddr) =>
+      paymentRequest(
+        starkbank,
+        provider,
+        new ethers.Contract(tokenAddr, erc20Abi, provider),
+        process.env.WALLET_ADDRESS,
+      ),
     );
+    paymentRequestEngines.forEach((engine) => engine.start());
 
-    // Gracefully shut down when receiving SIGINT.
-    process.on('SIGINT', shutdown);
-  });
-} catch (error) {
-  logger.error(error);
+    // Subscribe to Starbank webhooks
+    const webhook = await starkbank.webhook.create({
+      url: `https://${process.env.DOMAIN}/starkbank-webhook`,
+      subscriptions: ['brcode-payment'],
+    });
+    logger.info(`Subscribed to starkbank webhook id: ${webhook.id}`);
 
-  // Stop receiving requests shutdown engines if something fails.
-  if (shutdown) shutdown();
-}
+    safeMongooseConnection.connect((mongoUrl) => {
+      logger.info(`Connected to MongoDB at ${mongoUrl}`);
+
+      logger.info('Starting the server');
+      server = serve();
+      shutdown = buildShutdown(
+        server,
+        safeMongooseConnection,
+        paymentRequestEngines,
+        {
+          starkbank,
+          webhook,
+        },
+      );
+
+      // Gracefully shut down when receiving SIGINT.
+      process.on('SIGINT', shutdown);
+    });
+  } catch (error) {
+    logger.error(error);
+
+    // Stop receiving requests shutdown engines if something fails.
+    if (shutdown) shutdown();
+  }
+})();
