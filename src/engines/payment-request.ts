@@ -1,7 +1,8 @@
 import { ethers } from 'ethers';
 import starkbankType from 'starkbank';
-import logger from '../logger';
+import delay from 'delay';
 
+import logger from '../logger';
 import { PaymentRequest, SyncBlock } from '../models';
 import { IPaymentRequest } from '../models/payment-request';
 import { BrcodePayment, PaymentRequestStatus, Engine } from '../types';
@@ -112,6 +113,7 @@ export default function paymentRequestEngine(
         }
         interval.toBlock = interval.fromBlock + blockInterval;
         await syncBlock.save();
+        await delay(1000);
         running = false;
       }
     },
