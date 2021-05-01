@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 export const ACCEPTED_TOKEN_ADDRESSES = process.env.ACCEPTED_TOKEN_ADDRESSES.split(
   ',',
 ).map((address) => ethers.utils.getAddress(address));
-export const TOKEN_BRL_EXCHANGE_RATES = process.env.TOKEN_BRL_EXCHANGE_RATES.split(
+export const BRL_TOKEN_EXCHANGE_RATES = process.env.BRL_TOKEN_EXCHANGE_RATES.split(
   ',',
 ).map((er) => Number(er));
 export const DECIMAL_PLACES = process.env.DECIMAL_PLACES.split(',').map((d) =>
@@ -14,7 +14,7 @@ export const tokenAddrToIndex = ACCEPTED_TOKEN_ADDRESSES.reduce(
   {},
 );
 export const tokenAddrToRate = ACCEPTED_TOKEN_ADDRESSES.reduce(
-  (acc, curr, i) => ({ ...acc, [curr]: TOKEN_BRL_EXCHANGE_RATES[i] }),
+  (acc, curr, i) => ({ ...acc, [curr]: BRL_TOKEN_EXCHANGE_RATES[i] }),
   {},
 );
 export const tokenAddrToDecimals = ACCEPTED_TOKEN_ADDRESSES.reduce(

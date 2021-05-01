@@ -8,7 +8,7 @@ declare namespace NodeJS {
     JSON_RPC_ENDPOINT: string;
     WALLET_ADDRESS: string;
     ACCEPTED_TOKEN_ADDRESSES: string;
-    TOKEN_BRL_EXCHANGE_RATES: string;
+    BRL_TOKEN_EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
     CONFIRMATIONS_REQUIRED: string;
     META_TX_PROXY_ADDRESS: string;

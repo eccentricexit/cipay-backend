@@ -17,10 +17,7 @@ const buildShutdown = (
   server: Server,
   safeMongooseConnection: SafeMongooseConnection,
   engines: Engine[],
-  {
-    starkbank,
-    webhook,
-  }: {
+  starkbankTools?: {
     starkbank: starkbankType;
     webhook: { id: string };
   },
@@ -28,6 +25,10 @@ const buildShutdown = (
   logger.info('');
   logger.info('Graceful shutdown started');
   logger.info('Shutting down express server...');
+  const {
+    starkbank,
+    webhook,
+  } = starkbankTools || {}
 
   // Bit of a callback hell here. TODO: Promisify this.
   server.close(async function finishShutdown(expressErr) {
