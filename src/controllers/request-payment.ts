@@ -59,7 +59,7 @@ const requestPaymentSchema = Joi.object().keys({
  * Builds a handler to allow BRL payments with crypto.
  * @param metaTxProxy The contract to relay meta txes to.
  * @param starkbank Starkbank instance with funds to pay a brcode.
- * @returns The request handler
+ * @returns The request handler.
  */
 export default function buildRequestPaymentController(
   metaTxProxy: ethers.Contract,
@@ -109,6 +109,22 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        const erc20 = new ethers.Contract(tokenAddress, erc20Abi, provider);
+        const { amount: amountTokens, to } = erc20.interface.decodeFunctionData(
+          'transferFrom',
+          data,
+        );
+        if (ethers.utils.getAddress(to) !== ethers.utils.getAddress(process.env.WALLET_ADDRESS)){
+          res
+            .status(getHttpCodeForError(ResponseError.InvalidDestination))
+            .json(getResponseForError(ResponseError.InvalidDestination));
+          return;
+        }
+
+        const normalizedRate = ethers.BigNumber.from(
+          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
+        );
+
         const [nonce, previewOrError] = await Promise.all([
           metaTxProxy.nonces(recoveredAddr),
           isPayable(starkbank, brcode),
@@ -128,14 +144,6 @@ export default function buildRequestPaymentController(
           return;
         }
 
-        const erc20 = new ethers.Contract(tokenAddress, erc20Abi, provider);
-        const { amount: amountTokens } = erc20.interface.decodeFunctionData(
-          'transferFrom',
-          data,
-        );
-        const normalizedRate = ethers.BigNumber.from(
-          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
-        );
         const transferAmountRequired = normalizedRate.mul(
           ethers.BigNumber.from(previewOrError.amount).add(
             ethers.BigNumber.from(process.env.BASE_FEE_BRL),
