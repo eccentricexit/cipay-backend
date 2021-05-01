@@ -1,9 +1,9 @@
 version: "3"
 
 services:
-  mongo:
+  mongo.cipay:
     image: mongo:4.4.4
-    container_name: host.docker.internal
+    container_name: mongo.cipay
     restart: always
     networks:
       - app-network
@@ -11,6 +11,22 @@ services:
       - ./data/db:/data/db
     ports:
       - "27017:27017"
+  backend.cipay:
+    build:
+      context: .
+    container_name: backend.cipay
+    image: backend.cipay
+    restart: unless-stopped
+    depends_on: [mongo.cipay]
+    env_file:
+    - .env
+    volumes:
+      - ./logs:/logs
+    networks:
+      - app-network
+    ports:
+      - "8080:3000"
+
 
 networks:
   app-network:

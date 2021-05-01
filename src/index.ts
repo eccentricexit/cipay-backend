@@ -10,6 +10,7 @@ import { paymentRequest } from './engines';
 import { provider, starkbank } from './bootstrap';
 import { ACCEPTED_TOKEN_ADDRESSES } from './utils';
 import erc20Abi from './abis/erc20.ovm.json';
+import { StarkbankWebhook } from './types';
 
 const safeMongooseConnection = new SafeMongooseConnection({
   mongoUrl: process.env.MONGO_URL,
@@ -61,15 +62,24 @@ let shutdown: () => void;
     paymentRequestEngines.forEach((engine) => engine.start());
 
     // Subscribe to Starbank webhooks
-    const webhook = await starkbank.webhook.create({
-      url: `https://${process.env.DOMAIN}/starkbank-webhook`,
-      subscriptions: ['brcode-payment'],
-    });
-    logger.info(`Subscribed to starkbank webhook id: ${webhook.id}`);
+    let webhook: StarkbankWebhook;
+    try {
+      webhook = await starkbank.webhook.create({
+        url: `${process.env.HOME_URL}/starkbank-webhook`,
+        subscriptions: ['brcode-payment'],
+      });
+      logger.info(`Subscribed to starkbank webhook id: ${webhook.id}`);
+    } catch (error) {
+      if (
+        error?.errors?.[0].message ===
+        'This url is already registered in another webhook'
+      ) {
+        logger.warn(`This url is already registered in another webhook`);
+      } else throw error;
+    }
 
     safeMongooseConnection.connect((mongoUrl) => {
       logger.info(`Connected to MongoDB at ${mongoUrl}`);
-
       logger.info('Starting the server');
       server = serve();
       shutdown = buildShutdown(

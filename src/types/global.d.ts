@@ -5,21 +5,25 @@ declare namespace NodeJS {
     PAYMENT_LIMIT: string;
 
     // Web3
+    CONFIRMATIONS_REQUIRED: string;
     JSON_RPC_ENDPOINT: string;
     WALLET_ADDRESS: string;
+    META_TX_PROXY_ADDRESS: string;
+    RELAYER_PRIVATE_KEY: string;
     ACCEPTED_TOKEN_ADDRESSES: string;
     BRL_TOKEN_EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
-    CONFIRMATIONS_REQUIRED: string;
-    META_TX_PROXY_ADDRESS: string;
-    RELAYER_PRIVATE_KEY: string;
-    BASE_FEE_BRL: number;
+    BASE_FEE_BRL: string;
 
     // Starkbank
     TAX_ID: string;
-    DOMAIN: string;
+    STARK_BANK_API_URL: string;
     PROJECT_ID: string;
     STARKBANK_PUBLIC_KEY: string;
     SEC256K1_PRIVATE_KEY: string;
+
+    HOME_URL: string;
+
+    MONGO_URL: string;
   }
 }

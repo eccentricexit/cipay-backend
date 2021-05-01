@@ -25,10 +25,7 @@ const buildShutdown = (
   logger.info('');
   logger.info('Graceful shutdown started');
   logger.info('Shutting down express server...');
-  const {
-    starkbank,
-    webhook,
-  } = starkbankTools || {}
+  const { starkbank, webhook } = starkbankTools || {};
 
   // Bit of a callback hell here. TODO: Promisify this.
   server.close(async function finishShutdown(expressErr) {
@@ -40,10 +37,12 @@ const buildShutdown = (
       });
     } else logger.info('Server closed.');
 
-    // Dropping webhook.
-    logger.info('Deleting starkbank webhook...');
-    await starkbank.webhook.delete(webhook.id);
-    logger.info('Done.');
+    if (webhook) {
+      // Dropping webhook.
+      logger.info('Deleting starkbank webhook...');
+      await starkbank.webhook.delete(webhook.id);
+      logger.info('Done.');
+    }
 
     logger.info('Shutting down engines.');
     engines.forEach((engine) => engine.stop());

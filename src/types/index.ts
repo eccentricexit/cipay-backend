@@ -38,6 +38,12 @@ export interface StarkbankBalance {
   updated: string;
 }
 
+export interface StarkbankWebhook {
+  id: string;
+  url: string;
+  subscriptions: [string];
+}
+
 export interface BackendResponse {
   error?: ResponseError;
   message?: string;

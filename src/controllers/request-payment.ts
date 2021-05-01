@@ -114,7 +114,10 @@ export default function buildRequestPaymentController(
           'transferFrom',
           data,
         );
-        if (ethers.utils.getAddress(to) !== ethers.utils.getAddress(process.env.WALLET_ADDRESS)){
+        if (
+          ethers.utils.getAddress(to) !==
+          ethers.utils.getAddress(process.env.WALLET_ADDRESS)
+        ) {
           res
             .status(getHttpCodeForError(ResponseError.InvalidDestination))
             .json(getResponseForError(ResponseError.InvalidDestination));
