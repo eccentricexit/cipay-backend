@@ -1,39 +1,56 @@
 import starkbankType from 'starkbank';
 import { Request, RequestHandler, Response } from 'express';
-import Joi from '@hapi/joi';
 
 import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
-import { getHttpCodeForError, getResponseForError } from '../utils';
-import requestMiddleware from '../middleware/request-middleware';
+import { ACCEPTED_TOKEN_ADDRESSES, getHttpCodeForError, getResponseForError, tokenAddrToRate } from '../utils';
 import logger from '../logger';
+import { ethers } from 'ethers';
 
-const brcodePayableSchema = Joi.object().keys({
-  brcode: Joi.string().required(),
-});
-
-export default function buildBrcodePayableController(
+export default function buildAmountRequiredController(
   starkbank: starkbankType,
 ): RequestHandler {
-  return requestMiddleware(
-    async function brcodePayableController(
+  return async function amountRequiredController(
       req: Request,
       res: Response,
     ): Promise<void | BrcodePreview> {
-      const { brcode } = req.body;
+      const { brcode, tokenAddress } = req.query;
       try {
-        const previewOrError = await isPayable(starkbank, brcode);
+        if (
+          !ACCEPTED_TOKEN_ADDRESSES.includes(
+            ethers.utils.getAddress(String(tokenAddress)),
+          )
+        ) {
+          res
+            .status(getHttpCodeForError(ResponseError.InvalidToken))
+            .json(getResponseForError(ResponseError.InvalidToken));
+          return;
+        }
 
-        if (typeof previewOrError !== 'string')
-          // i.e. a payment preview.
-          res.send(200);
-        else
+        const previewOrError = await isPayable(starkbank, String(brcode));
+        if (typeof previewOrError === 'string') {
           res
             .status(getHttpCodeForError(previewOrError))
             .json(getResponseForError(previewOrError));
+          return;
+        }
+
+        const normalizedRate = ethers.BigNumber.from(
+          tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))],
+        );
+        const transferAmountRequired = normalizedRate.mul(
+          ethers.BigNumber.from(previewOrError.amount).add(
+            ethers.BigNumber.from(process.env.BASE_FEE_BRL),
+          ),
+        );
+
+        res.status(200).json({
+          ...previewOrError,
+          tokenAmountRequired: transferAmountRequired.toString()
+        });
       } catch (error) {
         logger.error({
           level: 'error',
-          message: `BrcodePayableController: Error checking if brcode is payable: ${brcode}`,
+          message: `amountRequiredController: Error checking if brcode is payable: ${brcode}`,
           error,
         });
         res.status(500).json({
@@ -41,9 +58,7 @@ export default function buildBrcodePayableController(
           message: 'Error: (Please notify at vago.visus@pm.me)',
         });
       }
-    },
-    { validation: { body: brcodePayableSchema } },
-  );
+    };
 }
 
 export async function isPayable(
@@ -65,7 +80,7 @@ export async function isPayable(
   const paymentPreview = paymentPreviews[0];
   if (paymentPreview.amount <= 0) return ResponseError.AmountTooSmallOrInvalid;
 
-  if (paymentPreview.status != 'active')
+  if (paymentPreview.status !== 'active')
     return ResponseError.InvalidPaymentStatus;
 
   if (paymentPreview.allowChange != false)

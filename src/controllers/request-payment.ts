@@ -11,7 +11,7 @@ import {
   getResponseForError,
   tokenAddrToRate,
 } from '../utils';
-import { isPayable } from './brcode-payable';
+import { isPayable } from './amount-required';
 import { PaymentRequest } from '../models';
 import logger from '../logger';
 import erc20Abi from '../abis/erc20.ovm.json';
@@ -64,7 +64,7 @@ const requestPaymentSchema = Joi.object().keys({
 export default function buildRequestPaymentController(
   metaTxProxy: ethers.Contract,
   starkbank: starkbankType,
-  provider: ethers.providers.JsonRpcProvider,
+  signer: ethers.Wallet,
 ): RequestHandler {
   return requestMiddleware(
     async function requestPaymentController(
@@ -101,7 +101,7 @@ export default function buildRequestPaymentController(
         );
 
         if (
-          ethers.utils.getAddress(claimedAddr) !== recoveredAddr.toLowerCase()
+          ethers.utils.getAddress(claimedAddr) !== recoveredAddr
         ) {
           res
             .status(getHttpCodeForError(ResponseError.FailedSigValidation))
@@ -109,8 +109,9 @@ export default function buildRequestPaymentController(
           return;
         }
 
-        const erc20 = new ethers.Contract(tokenAddress, erc20Abi, provider);
-        const { amount: amountTokens, to } = erc20.interface.decodeFunctionData(
+
+        const erc20 = new ethers.Contract(tokenAddress, erc20Abi, signer);
+        const [, to, amountTokens] = erc20.interface.decodeFunctionData(
           'transferFrom',
           data,
         );
@@ -123,10 +124,6 @@ export default function buildRequestPaymentController(
             .json(getResponseForError(ResponseError.InvalidDestination));
           return;
         }
-
-        const normalizedRate = ethers.BigNumber.from(
-          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
-        );
 
         const [nonce, previewOrError] = await Promise.all([
           metaTxProxy.nonces(recoveredAddr),
@@ -147,6 +144,9 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        const normalizedRate = ethers.BigNumber.from(
+          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
+        );
         const transferAmountRequired = normalizedRate.mul(
           ethers.BigNumber.from(previewOrError.amount).add(
             ethers.BigNumber.from(process.env.BASE_FEE_BRL),
@@ -160,7 +160,8 @@ export default function buildRequestPaymentController(
           return;
         }
 
-        const tx = await metaTxProxy.execute(message, signature);
+
+        const tx = await metaTxProxy.execute(message, signature, { from: signer.getAddress() });
         const paymentRequest = new PaymentRequest({
           brcode,
           payerAddr: recoveredAddr,
