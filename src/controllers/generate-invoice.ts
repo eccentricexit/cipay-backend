@@ -4,7 +4,6 @@ import starkbankType from 'starkbank';
 import { BrcodePreview } from '../types';
 import logger from '../logger';
 
-
 /**
  * Builds a handler to allow generating brcodes for testing.
  * @param starkbank Starkbank instance to generate the brcode.

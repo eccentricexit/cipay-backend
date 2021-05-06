@@ -72,7 +72,8 @@ export enum ResponseError {
 }
 
 export enum PaymentRequestStatus {
-  created, // Request received and awaits token tx confirmation.
+  created, // Request received and awaits token tx submission.
+  submitted, // Token transfer tx submitted, awaiting confirmation.
   confirmed, // Request confirmed and is being processed.
   rejected, // These should be used for failed payments that do not warrant refund.
   failed, // This is pending a refund.

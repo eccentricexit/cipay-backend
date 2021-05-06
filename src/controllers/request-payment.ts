@@ -160,20 +160,27 @@ export default function buildRequestPaymentController(
           return;
         }
 
-
-        const tx = await metaTxProxy.execute(message, signature, { from: signer.getAddress() });
+        logger.info('description', previewOrError.description)
         const paymentRequest = new PaymentRequest({
           brcode,
           payerAddr: recoveredAddr,
           coin: tokenAddress,
           rate: tokenAddrToRate[tokenAddress],
           status: PaymentRequestStatus.created,
-          txHash: tx.hash,
           receiverTaxId: previewOrError.taxId,
           description: previewOrError.description,
           brcodeAmount: previewOrError.amount,
         });
         await paymentRequest.save();
+
+        const tx = await metaTxProxy.execute(message, signature, { from: signer.getAddress() });
+
+        logger.info(tx.hash)
+        paymentRequest.txHash = tx.hash
+        paymentRequest.status = PaymentRequestStatus.submitted
+        await paymentRequest.save();
+        tx.wait()
+
         res.status(200).json(paymentRequest);
       } catch (error) {
         logger.error({

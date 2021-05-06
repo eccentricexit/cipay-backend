@@ -10,6 +10,7 @@ import { paymentRequest } from './engines';
 import { provider, starkbank } from './bootstrap';
 import { ACCEPTED_TOKEN_ADDRESSES } from './utils';
 import erc20Abi from './abis/erc20.ovm.json';
+import metaTxProxyAbi from './abis/metaTxProxy.ovm.json';
 import { StarkbankWebhook } from './types';
 
 const safeMongooseConnection = new SafeMongooseConnection({
@@ -57,6 +58,7 @@ let shutdown: () => void;
         provider,
         new ethers.Contract(tokenAddr, erc20Abi, provider),
         process.env.WALLET_ADDRESS,
+        new ethers.Contract(process.env.META_TX_PROXY_ADDRESS, metaTxProxyAbi, provider),
       ),
     );
     paymentRequestEngines.forEach((engine) => engine.start());

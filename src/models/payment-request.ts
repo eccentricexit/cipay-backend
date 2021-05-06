@@ -37,15 +37,15 @@ const schema = new Schema<IPaymentRequest>({
   coin: { type: String, index: true, required: true },
   rate: { type: String, required: true },
   status: { type: String, index: true, required: true },
-  txHash: { type: String, index: true, required: true },
+  txHash: { type: String, index: true, sparse: true },
   receiverTaxId: { type: String, index: true, required: true },
-  description: { type: String, required: true },
+  description: { type: String },
   brcodeAmount: { type: Number, required: true },
   starkbankPaymentId: {
     type: String,
     index: true,
-    required: true,
     unique: true,
+    sparse: true
   },
   brcodeStatus: { type: String, index: true },
 });
