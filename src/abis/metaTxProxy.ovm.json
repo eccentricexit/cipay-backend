@@ -10,24 +10,57 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "from",
+        "name": "_from",
         "type": "address"
       },
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "batchId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "batchNonce",
+        "name": "_nonce",
         "type": "uint256"
       }
     ],
     "name": "MetaTx",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "DOMAIN_SEPARATOR",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EIP712DOMAIN_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ERC20METATRANSACTION_TYPEHASH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
@@ -45,17 +78,12 @@
           },
           {
             "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
             "name": "signature",
             "type": "bytes"
           }
         ],
         "internalType": "struct GenericMetaTxProcessor.Call",
-        "name": "callData",
+        "name": "_callData",
         "type": "tuple"
       },
       {
@@ -72,32 +100,17 @@
           },
           {
             "internalType": "uint256",
-            "name": "batchId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "batchNonce",
+            "name": "nonce",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
             "name": "expiry",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "txGas",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "baseGas",
-            "type": "uint256"
           }
         ],
         "internalType": "struct GenericMetaTxProcessor.CallParams",
-        "name": "callParams",
+        "name": "_callParams",
         "type": "tuple"
       }
     ],
@@ -107,19 +120,27 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "governor",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
-        "name": "from",
+        "name": "",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "batchId",
-        "type": "uint256"
       }
     ],
-    "name": "meta_nonce",
+    "name": "nonce",
     "outputs": [
       {
         "internalType": "uint256",
@@ -133,6 +154,119 @@
   {
     "inputs": [],
     "name": "relayer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_governor",
+        "type": "address"
+      }
+    ],
+    "name": "setGovernor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddr",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_accepted",
+        "type": "bool"
+      }
+    ],
+    "name": "setTokenAccepted",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "tokenAccepted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct GenericMetaTxProcessor.Call",
+        "name": "_callData",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "tokenContract",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiry",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct GenericMetaTxProcessor.CallParams",
+        "name": "_callParams",
+        "type": "tuple"
+      }
+    ],
+    "name": "verify",
     "outputs": [
       {
         "internalType": "address",

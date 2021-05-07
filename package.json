@@ -4,7 +4,7 @@
   "description": "Pay in BRL with your crypto.",
   "author": "Visus",
   "scripts": {
-    "start": "MONGO_URL=mongodb://localhost:27017/vouches nodemon --watch 'src/**/*.ts' --exec 'ts-node -r dotenv-safe/config' src/index.ts",
+    "start": "MONGO_URL=mongodb://localhost:27017/payment-requests nodemon --watch 'src/**/*.ts' --exec 'ts-node -r dotenv-safe/config' src/index.ts",
     "prod": "ts-node -r dotenv-safe/config src/index.ts",
     "generate-brcode": "node -r dotenv-safe/config tools/generate-brcode",
     "lint:eslint": "eslint . --ext .ts,.tsx",

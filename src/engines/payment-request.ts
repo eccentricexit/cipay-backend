@@ -54,7 +54,7 @@ export default function paymentRequestEngine(
         logger.info(`MetaTxProxy addr: ${metaTxProxy.address}`)
         logger.info(`erc20Address addr: ${erc20.address}`)
         const transferEvents = (await provider.getLogs({
-          // ...erc20.filters.Transfer(),
+          ...erc20.filters.Transfer(),
           ...interval,
         })).filter(e => {
           logger.info(`event address: ${e.address}`)
@@ -62,32 +62,13 @@ export default function paymentRequestEngine(
         });
 
         logger.info('')
-        logger.info('')
-        logger.info(`events received: ${JSON.stringify(transferEvents)}`, )
-
-        logger.info('')
-        logger.info(`transfer filter ${JSON.stringify(erc20.filters.Transfer())}`)
-        logger.info(`approval filter ${JSON.stringify(erc20.filters.Approval())}`)
-        logger.info(`callExecuted filter ${JSON.stringify(metaTxProxy.filters.CallExecuted())}`)
-        logger.info('')
-        if (transferEvents.length > 0) {
-          try {
-            transferEvents.forEach(e => {
-              let parsedLog
-              if (e.address === erc20.address) {
-                parsedLog = erc20.interface.parseLog(e)
-              } else {
-                parsedLog = metaTxProxy.interface.parseLog(e)
-              }
-              logger.info('')
-              logger.info(`parsedLog: ${JSON.stringify(parsedLog)}`, )
-            })
-          } catch (error) {
-            logger.error(error)
-          }
+        transferEvents.forEach(e => {
+          const parsedLog = erc20.interface.parseLog(e)
+          logger.info('')
+          logger.info(`parsedLog: ${JSON.stringify(parsedLog)}`, )
         }
 
-        const processesedRequests: IPaymentRequest[] = [];
+        // const processesedRequests: IPaymentRequest[] = [];
         // await Promise.allSettled(
         //   transferEvents.map(async (transferEvent) => {
         //     try {
@@ -137,7 +118,7 @@ export default function paymentRequestEngine(
         //       });
         //     }
         //   }),
-        // );
+        );
 
         const eventLastBlock = transferEvents.reduce((acc, curr) => (curr.blockNumber > acc ? curr.blockNumber : acc) , 0)
         const currentblockNumber = await provider.getBlockNumber()

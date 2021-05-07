@@ -1,1 +1,1 @@
-export { default as paymentRequest } from './payment-request';
+export { default as paymentRequestEngine } from './payment-request';

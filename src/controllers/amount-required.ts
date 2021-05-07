@@ -34,9 +34,11 @@ export default function buildAmountRequiredController(
           return;
         }
 
-        const normalizedRate = ethers.BigNumber.from(
-          tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))],
-        );
+        logger.info(`tokenRate ${tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))]}`)
+        const tokenRate = tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))]
+        const normalizedRate = ethers.BigNumber.from(tokenRate);
+        logger.info(`normalizedRate ${normalizedRate.toString()}`)
+
         const transferAmountRequired = normalizedRate.mul(
           ethers.BigNumber.from(previewOrError.amount).add(
             ethers.BigNumber.from(process.env.BASE_FEE_BRL),

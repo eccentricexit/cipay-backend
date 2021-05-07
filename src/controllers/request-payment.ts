@@ -16,6 +16,15 @@ import { PaymentRequest } from '../models';
 import logger from '../logger';
 import erc20Abi from '../abis/erc20.ovm.json';
 
+interface SignRequest {
+  from: string;
+  to: string;
+  tokenContract: string;
+  amount: string;
+  nonce: number;
+  expiry: number;
+}
+
 const requestPaymentSchema = Joi.object().keys({
   brcode: Joi.string().required(),
   web3: Joi.object()
@@ -25,7 +34,6 @@ const requestPaymentSchema = Joi.object().keys({
         .keys({
           domain: Joi.object()
             .keys({
-              chainId: Joi.number().required(),
               name: Joi.string().required(),
               verifyingContract: Joi.string().required(),
               version: Joi.string().required(),
@@ -33,19 +41,22 @@ const requestPaymentSchema = Joi.object().keys({
             .required(),
           types: Joi.object()
             .keys({
-              ForwardRequest: Joi.array()
-                .items(Joi.object().required())
+              ERC20MetaTransaction: Joi.array()
+                .items(Joi.object({
+                  name: Joi.string().required(),
+                  type: Joi.string().required()
+                }).required())
                 .required(),
             })
             .required(),
           message: Joi.object()
             .keys({
-              data: Joi.string().required(),
               from: Joi.string().required(),
-              gas: Joi.number().required(),
-              nonce: Joi.string().required(),
               to: Joi.string().required(),
-              value: Joi.number().required(),
+              tokenContract: Joi.string().required(),
+              amount: Joi.string().required(),
+              nonce: Joi.number().required(),
+              expiry: Joi.number().required(),
             })
             .required(),
         })
@@ -75,13 +86,18 @@ export default function buildRequestPaymentController(
         const {
           web3: {
             signature,
-            typedData: { domain, types, message },
+            typedData,
             claimedAddr,
           },
           brcode,
         } = req.body;
 
-        const { to: tokenAddress, data } = message;
+        const { domain, types } = typedData
+        const message = typedData.message as SignRequest
+        const {
+          tokenContract: tokenAddress,
+          amount,
+        } = message;
         if (
           !ACCEPTED_TOKEN_ADDRESSES.includes(
             ethers.utils.getAddress(tokenAddress),
@@ -109,33 +125,32 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        // const erc20 = new ethers.Contract(tokenAddress, erc20Abi, signer);
+        // const [, to, amountTokens] = erc20.interface.decodeFunctionData(
+        //   'transferFrom',
+        //   data,
+        // );
+        // if (
+        //   ethers.utils.getAddress(to) !==
+        //   ethers.utils.getAddress(process.env.WALLET_ADDRESS)
+        // ) {
+        //   res
+        //     .status(getHttpCodeForError(ResponseError.InvalidDestination))
+        //     .json(getResponseForError(ResponseError.InvalidDestination));
+        //   return;
+        // }
 
-        const erc20 = new ethers.Contract(tokenAddress, erc20Abi, signer);
-        const [, to, amountTokens] = erc20.interface.decodeFunctionData(
-          'transferFrom',
-          data,
-        );
-        if (
-          ethers.utils.getAddress(to) !==
-          ethers.utils.getAddress(process.env.WALLET_ADDRESS)
-        ) {
-          res
-            .status(getHttpCodeForError(ResponseError.InvalidDestination))
-            .json(getResponseForError(ResponseError.InvalidDestination));
-          return;
-        }
-
-        const [nonce, previewOrError] = await Promise.all([
-          metaTxProxy.nonces(recoveredAddr),
+        const [, previewOrError] = await Promise.all([
+          metaTxProxy.nonce(recoveredAddr),
           isPayable(starkbank, brcode),
         ]);
 
-        if (nonce.toString() !== message.nonce) {
-          res
-            .status(getHttpCodeForError(ResponseError.InvalidNonce))
-            .json(getResponseForError(ResponseError.InvalidNonce));
-          return;
-        }
+        // if (nonce.toString() !== message.nonce) {
+        //   res
+        //     .status(getHttpCodeForError(ResponseError.InvalidNonce))
+        //     .json(getResponseForError(ResponseError.InvalidNonce));
+        //   return;
+        // }
 
         if (typeof previewOrError === 'string') {
           res
@@ -153,12 +168,12 @@ export default function buildRequestPaymentController(
           ),
         );
 
-        if (ethers.BigNumber.from(amountTokens).lt(transferAmountRequired)) {
-          res
-            .status(getHttpCodeForError(ResponseError.NotEnoughFunds))
-            .json(getResponseForError(ResponseError.NotEnoughFunds));
-          return;
-        }
+        // if (ethers.BigNumber.from(amount).lt(transferAmountRequired)) {
+        //   res
+        //     .status(getHttpCodeForError(ResponseError.NotEnoughFunds))
+        //     .json(getResponseForError(ResponseError.NotEnoughFunds));
+        //   return;
+        // }
 
         logger.info('description', previewOrError.description)
         const paymentRequest = new PaymentRequest({
@@ -173,9 +188,27 @@ export default function buildRequestPaymentController(
         });
         await paymentRequest.save();
 
-        const tx = await metaTxProxy.execute(message, signature, { from: signer.getAddress() });
+        const callData = {
+          from: message.from,
+          to: message.to,
+          signature,
+        }
+        const callParams = {
+          tokenContract: message.tokenContract,
+          amount: message.amount,
+          nonce: message.nonce,
+          expiry: message.expiry.toString(),
+        }
+        logger.info(`recovered ${await metaTxProxy.verify(
+          callData,
+          callParams
+        )}`)
+        const tx = await metaTxProxy.executeMetaTransaction(
+          callData,
+          callParams
+        );
 
-        logger.info(tx.hash)
+        logger.info(`Tx hash: ${tx.hash}`)
         paymentRequest.txHash = tx.hash
         paymentRequest.status = PaymentRequestStatus.submitted
         await paymentRequest.save();
@@ -185,9 +218,7 @@ export default function buildRequestPaymentController(
       } catch (error) {
         logger.error({
           level: 'error',
-          message: `Failed to accept payment for request. ${JSON.stringify(
-            req.body,
-          )}`,
+          message: `Failed to accept payment for request.`,
           error,
         });
         res.status(500).json({

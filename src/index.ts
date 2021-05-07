@@ -6,7 +6,7 @@ import logger from './logger';
 import SafeMongooseConnection from './lib/safe-mongoose-connection';
 import app from './app';
 import buildShutdown from './build-shutdown';
-import { paymentRequest } from './engines';
+import { paymentRequestEngine } from './engines';
 import { provider, starkbank } from './bootstrap';
 import { ACCEPTED_TOKEN_ADDRESSES } from './utils';
 import erc20Abi from './abis/erc20.ovm.json';
@@ -53,7 +53,7 @@ let shutdown: () => void;
 (async () => {
   try {
     const paymentRequestEngines = ACCEPTED_TOKEN_ADDRESSES.map((tokenAddr) =>
-      paymentRequest(
+      paymentRequestEngine(
         starkbank,
         provider,
         new ethers.Contract(tokenAddr, erc20Abi, provider),
