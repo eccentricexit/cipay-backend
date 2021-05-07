@@ -26,7 +26,7 @@ router.get('/v1/amount-required', buildAmountRequiredController(starkbank));
 router.get('/v1/payment-status', buildPaymentStatusController());
 router.post(
   '/v1/request-payment',
-  buildRequestPaymentController(metaTxProxy, starkbank, signer),
+  buildRequestPaymentController(metaTxProxy, starkbank),
 );
 
 if (process.env.NODE_ENV === 'sandbox')
