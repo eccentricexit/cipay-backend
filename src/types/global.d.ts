@@ -25,5 +25,7 @@ declare namespace NodeJS {
     HOME_URL: string;
 
     MONGO_URL: string;
+
+    PAYMENT_ENGINE_DELAY_MILLISECONDS: string;
   }
 }

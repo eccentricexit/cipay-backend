@@ -58,7 +58,11 @@ let shutdown: () => void;
         provider,
         new ethers.Contract(tokenAddr, erc20Abi, provider),
         process.env.WALLET_ADDRESS,
-        new ethers.Contract(process.env.META_TX_PROXY_ADDRESS, metaTxProxyAbi, provider),
+        new ethers.Contract(
+          process.env.META_TX_PROXY_ADDRESS,
+          metaTxProxyAbi,
+          provider,
+        ),
       ),
     );
     paymentRequestEngines.forEach((engine) => engine.start());

@@ -29,11 +29,8 @@ router.post(
   buildRequestPaymentController(metaTxProxy, starkbank, signer),
 );
 
-if (process.env.NODE_ENV==='sandbox')
-  router.post(
-    '/v1/generate-brcode',
-    buildGenerateInvoice(starkbank),
-  );
+if (process.env.NODE_ENV === 'sandbox')
+  router.post('/v1/generate-brcode', buildGenerateInvoice(starkbank));
 
 router.post('/starkbank-webhook', buildStarkbankWebhookController());
 

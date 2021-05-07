@@ -22,6 +22,11 @@ const buildShutdown = (
     webhook: { id: string };
   },
 ): (() => void) => async () => {
+  // Running the app with npm or yarn causes SIGINT
+  // to be triggered twice for whatever reason.
+  // Check if it has not already started.
+  if (!server.listening) return;
+
   logger.info('');
   logger.info('Graceful shutdown started');
   logger.info('Shutting down express server...');

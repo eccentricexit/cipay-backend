@@ -39,15 +39,15 @@ const schema = new Schema<IPaymentRequest>({
   status: { type: String, index: true, required: true },
   txHash: { type: String, index: true, sparse: true },
   receiverTaxId: { type: String, index: true, required: true },
-  description: { type: String },
+  description: { type: String, sparse: true },
   brcodeAmount: { type: Number, required: true },
   starkbankPaymentId: {
     type: String,
     index: true,
     unique: true,
-    sparse: true
+    sparse: true,
   },
-  brcodeStatus: { type: String, index: true },
+  brcodeStatus: { type: String, index: true, sparse: true },
 });
 
 // Add timestamp plugin for createdAt and updatedAt in miliseconds from epoch
