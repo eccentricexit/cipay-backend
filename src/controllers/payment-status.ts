@@ -10,7 +10,10 @@ export default function buildPaymentStatusController(): RequestHandler {
   ): Promise<void> {
     try {
       const { id } = req.query;
-      res.status(200).json(await PaymentRequest.findById(id));
+      const paymentRequest = await PaymentRequest.findOne({
+        brcode: String(id),
+      });
+      res.status(200).json(paymentRequest);
     } catch (error) {
       logger.error({
         level: 'error',
