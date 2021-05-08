@@ -1,22 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
-import slowDown from 'express-slow-down';
-import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 
 import logger from './logger';
 import routes from './routes';
 import ApplicationError from './errors/application-error';
-
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000,
-  delayAfter: 100,
-  delayMs: 500,
-});
-const rateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
 
 const app = express();
 function logResponseTime(req: Request, res: Response, next: NextFunction) {
@@ -37,8 +25,6 @@ function logResponseTime(req: Request, res: Response, next: NextFunction) {
 
 app.use(logResponseTime);
 app.use(helmet());
-app.use(speedLimiter);
-app.use(rateLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());

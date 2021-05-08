@@ -51,8 +51,6 @@
     "dotenv-safe": "^8.2.0",
     "ethers": "^5.0.25",
     "express": "^4.17.1",
-    "express-rate-limit": "^5.2.3",
-    "express-slow-down": "^1.4.0",
     "helmet": "^4.4.1",
     "mongoose": "^5.12.5",
     "starkbank": "^2.2.0",
