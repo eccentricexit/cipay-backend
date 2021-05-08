@@ -14,6 +14,7 @@ declare namespace NodeJS {
     BRL_TOKEN_EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
     BASE_FEE_BRL: string;
+    TOKEN_SYMBOLS: string;
 
     // Starkbank
     TAX_ID: string;

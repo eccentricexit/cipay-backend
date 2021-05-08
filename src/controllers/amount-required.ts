@@ -6,7 +6,9 @@ import {
   ACCEPTED_TOKEN_ADDRESSES,
   getHttpCodeForError,
   getResponseForError,
+  tokenAddrToDecimals,
   tokenAddrToRate,
+  tokenAddrToSymbol,
 } from '../utils';
 import logger from '../logger';
 import { ethers } from 'ethers';
@@ -52,6 +54,10 @@ export default function buildAmountRequiredController(
       res.status(200).json({
         ...previewOrError,
         tokenAmountRequired: transferAmountRequired.toString(),
+        tokenDecimals:
+          tokenAddrToDecimals[ethers.utils.getAddress(String(tokenAddress))],
+        tokenSymbol:
+          tokenAddrToSymbol[ethers.utils.getAddress(String(tokenAddress))],
       });
     } catch (error) {
       logger.error({
