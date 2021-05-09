@@ -38,7 +38,7 @@ export default function paymentRequestEngine(
         await syncBlock.save();
       }
 
-      const blockInterval = 50;
+      const blockInterval = 1000;
       const interval = {
         fromBlock: syncBlock.lastBlock,
         toBlock: syncBlock.lastBlock + blockInterval,
