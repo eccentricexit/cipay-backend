@@ -7,14 +7,15 @@ import {
   getHttpCodeForError,
   getResponseForError,
   tokenAddrToDecimals,
-  tokenAddrToRate,
   tokenAddrToSymbol,
 } from '../utils';
 import logger from '../logger';
 import { ethers } from 'ethers';
+import PriceFeed from '../models/price-feed';
 
 export default function buildAmountRequiredController(
   starkbank: starkbankType,
+  priceFeed: PriceFeed,
 ): RequestHandler {
   return async function amountRequiredController(
     req: Request,
@@ -41,15 +42,19 @@ export default function buildAmountRequiredController(
         return;
       }
 
-      const tokenRate =
-        tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))];
-      const normalizedRate = ethers.BigNumber.from(tokenRate);
+      const ethPriceBRL = priceFeed.getETHPriceBRL()
+      if (!ethPriceBRL) {
+        res.status(500).json({
+          message: 'Please wait, system booting.'
+        })
+        return;
+      }
 
-      const transferAmountRequired = normalizedRate.mul(
-        ethers.BigNumber.from(previewOrError.amount).add(
-          ethers.BigNumber.from(process.env.BASE_FEE_BRL),
-        ),
-      );
+      // ETH required = amountBRLcents * 10^18
+      //                   ethPriceBRlcents
+      const transferAmountRequired = ethers.BigNumber.from(previewOrError.amount)
+        .mul(ethers.BigNumber.from(10).pow(ethers.BigNumber.from(18)))
+        .div(ethers.BigNumber.from(ethPriceBRL))
 
       res.status(200).json({
         ...previewOrError,

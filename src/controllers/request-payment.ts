@@ -9,11 +9,11 @@ import {
   ACCEPTED_TOKEN_ADDRESSES,
   getHttpCodeForError,
   getResponseForError,
-  tokenAddrToRate,
 } from '../utils';
 import { isPayable } from './amount-required';
 import { PaymentRequest } from '../models';
 import logger from '../logger';
+import PriceFeed from '../models/price-feed';
 
 interface SignRequest {
   from: string;
@@ -71,11 +71,13 @@ const requestPaymentSchema = Joi.object().keys({
  * Builds a handler to allow BRL payments with crypto.
  * @param metaTxProxy The contract to relay meta txes to.
  * @param starkbank Starkbank instance with funds to pay a brcode.
+ * @param priceFeed A source of token price information.
  * @returns The request handler.
  */
 export default function buildRequestPaymentController(
   metaTxProxy: ethers.Contract,
   starkbank: starkbankType,
+  priceFeed: PriceFeed,
 ): RequestHandler {
   return requestMiddleware(
     async function requestPaymentController(
@@ -151,14 +153,19 @@ export default function buildRequestPaymentController(
           return;
         }
 
-        const normalizedRate = ethers.BigNumber.from(
-          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
-        );
-        const transferAmountRequired = normalizedRate.mul(
-          ethers.BigNumber.from(previewOrError.amount).add(
-            ethers.BigNumber.from(process.env.BASE_FEE_BRL),
-          ),
-        );
+        const ethPriceBRL = priceFeed.getETHPriceBRL()
+        if (!ethPriceBRL) {
+          res.status(500).json({
+            message: 'Please wait, system booting.'
+          })
+          return;
+        }
+
+        // ETH required = amountBRLcents * 10^18
+        //                   ethPriceBRlcents
+        const transferAmountRequired = ethers.BigNumber.from(previewOrError.amount)
+          .mul(ethers.BigNumber.from(10).pow(ethers.BigNumber.from(18)))
+          .div(ethers.BigNumber.from(ethPriceBRL))
 
         if (ethers.BigNumber.from(amount).lt(transferAmountRequired)) {
           res
@@ -171,7 +178,7 @@ export default function buildRequestPaymentController(
           brcode,
           payerAddr: recoveredAddr,
           coin: tokenAddress,
-          rate: tokenAddrToRate[tokenAddress],
+          rate: ethPriceBRL,
           status: PaymentRequestStatus.created,
           receiverTaxId: previewOrError.taxId,
           description: previewOrError.description,

@@ -53,6 +53,7 @@
     "express": "^4.17.1",
     "helmet": "^4.4.1",
     "mongoose": "^5.12.5",
+    "node-fetch": "^2.6.1",
     "starkbank": "^2.2.0",
     "tslib": "~2.0.3",
     "winston": "^3.3.3",

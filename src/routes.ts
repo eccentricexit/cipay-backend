@@ -11,6 +11,7 @@ import {
   buildStatusController,
   buildGenerateInvoice,
 } from './controllers';
+import PriceFeed from './models/price-feed';
 
 const signer = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
 const metaTxProxy = new ethers.Contract(
@@ -20,13 +21,14 @@ const metaTxProxy = new ethers.Contract(
 );
 
 const router = Router();
+const priceFeed = new PriceFeed()
 
 router.get('/v1/status', buildStatusController());
-router.get('/v1/amount-required', buildAmountRequiredController(starkbank));
+router.get('/v1/amount-required', buildAmountRequiredController(starkbank, priceFeed));
 router.get('/v1/payment-status', buildPaymentStatusController());
 router.post(
   '/v1/request-payment',
-  buildRequestPaymentController(metaTxProxy, starkbank),
+  buildRequestPaymentController(metaTxProxy, starkbank, priceFeed),
 );
 
 if (process.env.NODE_ENV === 'sandbox')
