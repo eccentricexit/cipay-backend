@@ -19,7 +19,7 @@ import { ACCEPTED_TOKEN_ADDRESSES } from '../utils';
 export default function paymentRequestEngine(
   starkbank: starkbankType,
   provider: ethers.providers.JsonRpcProvider,
-  erc20: ethers.Contract,
+  erc20: ethers.Contract
 ): Engine {
   let shutdownRequested = false;
   let running = false;
@@ -33,7 +33,7 @@ export default function paymentRequestEngine(
         // Engine starting for the very first time.
         syncBlock = new SyncBlock({
           id: SYNC_BLOCK_KEY,
-          lastBlock: await provider.getBlockNumber(),
+          lastBlock: await provider.getBlockNumber()
         });
         await syncBlock.save();
       }
@@ -41,7 +41,7 @@ export default function paymentRequestEngine(
       const blockInterval = 1000;
       const interval = {
         fromBlock: syncBlock.lastBlock,
-        toBlock: syncBlock.lastBlock + blockInterval,
+        toBlock: syncBlock.lastBlock + blockInterval
       };
 
       logger.info(`Starting interval: ${JSON.stringify(interval)}`);
@@ -52,13 +52,13 @@ export default function paymentRequestEngine(
         const transferEvents = (
           await provider.getLogs({
             ...erc20.filters.Transfer(null, process.env.WALLET_ADDRESS),
-            ...interval,
+            ...interval
           })
         ).filter(
           (e) =>
             e.address.toLowerCase() ===
               process.env.META_TX_PROXY_ADDRESS.toLowerCase() ||
-            ACCEPTED_TOKEN_ADDRESSES.includes(e.address),
+            ACCEPTED_TOKEN_ADDRESSES.includes(e.address)
         );
 
         const processesedRequests: IPaymentRequest[] = [];
@@ -66,12 +66,12 @@ export default function paymentRequestEngine(
           transferEvents.map(async (transferEvent) => {
             try {
               const paymentRequest = await PaymentRequest.findOne({
-                txHash: transferEvent.transactionHash,
+                txHash: transferEvent.transactionHash
               });
 
               if (!paymentRequest) {
                 logger.warn(
-                  `PaymentRequestEngine: No corresponding entry for deposit found in db, ignoring. TxHash: ${transferEvent.transactionHash}`,
+                  `PaymentRequestEngine: No corresponding entry for deposit found in db, ignoring. TxHash: ${transferEvent.transactionHash}`
                 );
                 return;
               }
@@ -81,7 +81,7 @@ export default function paymentRequestEngine(
                 String(PaymentRequestStatus.submitted)
               ) {
                 logger.warn(
-                  `PaymentRequestEngine: Payment request in an invalid state, ignoring. Status: ${paymentRequest.status} expected ${PaymentRequestStatus.submitted}, id: ${paymentRequest.id}`,
+                  `PaymentRequestEngine: Payment request in an invalid state, ignoring. Status: ${paymentRequest.status} expected ${PaymentRequestStatus.submitted}, id: ${paymentRequest.id}`
                 );
                 return;
               }
@@ -94,7 +94,7 @@ export default function paymentRequestEngine(
                 brcode: paymentRequest.brcode,
                 taxId: paymentRequest.receiverTaxId,
                 description: paymentRequest.description || 'Cipay payment',
-                amount: paymentRequest.brcodeAmount,
+                amount: paymentRequest.brcodeAmount
               };
               const brcodePayment: BrcodePayment = (
                 await starkbank.brcodePayment.create([payment])
@@ -109,15 +109,15 @@ export default function paymentRequestEngine(
               logger.error({
                 level: 'error',
                 message: `PaymentRequestEngine: Error fetching payment for txHash ${transferEvent.transactionHash}`,
-                error,
+                error
               });
             }
-          }),
+          })
         );
 
         const eventLastBlock = transferEvents.reduce(
           (acc, curr) => (curr.blockNumber > acc ? curr.blockNumber : acc),
-          0,
+          0
         );
         const currentblockNumber = await provider.getBlockNumber();
         interval.fromBlock =
@@ -140,6 +140,6 @@ export default function paymentRequestEngine(
     },
     isRunning: function isRunning() {
       return running;
-    },
+    }
   };
 }

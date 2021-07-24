@@ -30,6 +30,8 @@ dist
 # Misc
 .DS_Store
 .env
+.env.*
+!.env.example
 
 data
 logs

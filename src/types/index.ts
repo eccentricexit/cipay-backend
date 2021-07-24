@@ -68,7 +68,7 @@ export enum ResponseError {
   InvalidToken = 'invalid-token',
   NotEnoughFunds = 'not-enough-funds',
   InvalidNonce = 'invalid-nonce',
-  FailedSigValidation = 'failed-sig-validation',
+  FailedSigValidation = 'failed-sig-validation'
 }
 
 export enum PaymentRequestStatus {
@@ -79,7 +79,7 @@ export enum PaymentRequestStatus {
   failed, // This is pending a refund.
   refunded, // This payment request failed and the client was refunded.
   processing, // Waiting fiat payment.
-  success, // Request processed.
+  success // Request processed.
 }
 
 export interface Engine {

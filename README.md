@@ -15,7 +15,5 @@ This service takes a meta transaction (transfering ETH from user to the service)
 
 ## Running
 
-### Development
-
-1. `docker-compose up -d mongo.cipay`
+1. `docker-compose --env-file <path-to-env-file> up -d mongo.cipay`
 2. `yarn start`

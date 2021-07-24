@@ -9,7 +9,7 @@ export const STYLES = {
   INFO: chalk.hex('#c4c64f'),
   VERBOSE: chalk.hex('#6435c9'),
   DEBUG: chalk.hex('#2185d0'),
-  SILLY: chalk.hex('#21ba45'),
+  SILLY: chalk.hex('#21ba45')
 };
 
 export enum LABELS {
@@ -18,7 +18,7 @@ export enum LABELS {
   INFO = 'INFO',
   VERBOSE = 'VERBOSE',
   DEBUG = 'DEBUG',
-  SILLY = 'SILLY',
+  SILLY = 'SILLY'
 }
 
 class ConsoleLogger {
@@ -38,8 +38,8 @@ class ConsoleLogger {
             return item.message;
           }
           return item;
-        }),
-      ),
+        })
+      )
     );
   };
 

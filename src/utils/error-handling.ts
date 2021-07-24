@@ -33,7 +33,7 @@ const getMessageForError = (error: ResponseError): string => {
       return 'Payments without a specific amount or zero are not allowed.';
     case ResponseError.AmountTooLarge:
       return `Only payments of up to ${Number(
-        process.env.PAYMENT_LIMIT,
+        process.env.PAYMENT_LIMIT
       )} BRL are allowed`;
     case ResponseError.InvalidPaymentStatus:
       return `Invalid payment status`;
@@ -62,5 +62,5 @@ const getMessageForError = (error: ResponseError): string => {
 
 export const getResponseForError = (error: ResponseError): BackendResponse => ({
   error,
-  message: getMessageForError(error),
+  message: getMessageForError(error)
 });

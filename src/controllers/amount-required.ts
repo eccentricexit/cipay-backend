@@ -8,23 +8,23 @@ import {
   getResponseForError,
   tokenAddrToDecimals,
   tokenAddrToRate,
-  tokenAddrToSymbol,
+  tokenAddrToSymbol
 } from '../utils';
 import logger from '../logger';
 import { ethers } from 'ethers';
 
 export default function buildAmountRequiredController(
-  starkbank: starkbankType,
+  starkbank: starkbankType
 ): RequestHandler {
   return async function amountRequiredController(
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<void | BrcodePreview> {
     const { brcode, tokenAddress } = req.query;
     try {
       if (
         !ACCEPTED_TOKEN_ADDRESSES.includes(
-          ethers.utils.getAddress(String(tokenAddress)),
+          ethers.utils.getAddress(String(tokenAddress))
         )
       ) {
         res
@@ -47,8 +47,8 @@ export default function buildAmountRequiredController(
 
       const transferAmountRequired = normalizedRate.mul(
         ethers.BigNumber.from(previewOrError.amount).add(
-          ethers.BigNumber.from(process.env.BASE_FEE_BRL),
-        ),
+          ethers.BigNumber.from(process.env.BASE_FEE_BRL)
+        )
       );
 
       res.status(200).json({
@@ -57,17 +57,17 @@ export default function buildAmountRequiredController(
         tokenDecimals:
           tokenAddrToDecimals[ethers.utils.getAddress(String(tokenAddress))],
         tokenSymbol:
-          tokenAddrToSymbol[ethers.utils.getAddress(String(tokenAddress))],
+          tokenAddrToSymbol[ethers.utils.getAddress(String(tokenAddress))]
       });
     } catch (error) {
       logger.error({
         level: 'error',
         message: `amountRequiredController: Error checking if brcode is payable: ${brcode}`,
-        error,
+        error
       });
       res.status(500).json({
         error,
-        message: 'Error: (Please notify at vago.visus@pm.me)',
+        message: 'Error: (Please notify at vago.visus@pm.me)'
       });
     }
   };
@@ -75,11 +75,11 @@ export default function buildAmountRequiredController(
 
 export async function isPayable(
   starkbank: starkbankType,
-  brcode: string,
+  brcode: string
 ): Promise<ResponseError | BrcodePreview> {
   const paymentPreviews: BrcodePreview[] = [];
   const response = await starkbank.brcodePreview.query({
-    brcodes: [brcode],
+    brcodes: [brcode]
   });
 
   for await (const preview of response) {

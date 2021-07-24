@@ -9,7 +9,7 @@ const levelStyleMap: { [key: string]: chalk.Chalk } = {
   info: STYLES.INFO,
   verbose: STYLES.VERBOSE,
   debug: STYLES.DEBUG,
-  silly: STYLES.SILLY,
+  silly: STYLES.SILLY
 };
 
 export default class ConsoleLogTransport extends Transport {

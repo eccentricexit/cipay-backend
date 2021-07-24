@@ -1,14 +1,6 @@
 {
-  "singleQuote": true,
-  "trailingComma": "all",
   "semi": true,
-  "printWidth": 80,
-  "overrides": [
-    {
-      "files": "*.ts",
-      "options": {
-        "parser": "typescript"
-      }
-    }
-  ]
+  "trailingComma": "none",
+  "singleQuote": true,
+  "printWidth": 80
 }

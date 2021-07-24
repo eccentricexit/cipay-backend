@@ -1,7 +1,7 @@
 import { Model, Schema, model } from 'mongoose';
 import { PaymentRequestStatus } from '../types';
 import TimeStampPlugin, {
-  ITimeStampedDocument,
+  ITimeStampedDocument
 } from './plugins/timestamp-plugin';
 
 export interface IPaymentRequest extends ITimeStampedDocument {
@@ -45,9 +45,9 @@ const schema = new Schema<IPaymentRequest>({
     type: String,
     index: true,
     unique: true,
-    sparse: true,
+    sparse: true
   },
-  brcodeStatus: { type: String, index: true, sparse: true },
+  brcodeStatus: { type: String, index: true, sparse: true }
 });
 
 // Add timestamp plugin for createdAt and updatedAt in miliseconds from epoch

@@ -7,7 +7,7 @@ import { PaymentRequestStatus } from '../types';
 export default function buildStarkbankWebhookController(): RequestHandler {
   return async function starkbankWebhookController(
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<void> {
     const { event } = req.body || {};
     const { log } = event || {};
@@ -20,11 +20,11 @@ export default function buildStarkbankWebhookController(): RequestHandler {
 
     try {
       const paymentRequest = await PaymentRequest.findOne({
-        starkbankPaymentId: id,
+        starkbankPaymentId: id
       });
       if (!paymentRequest) {
         logger.warn(
-          `StarkbankWebhookController: Starkbank reported on a payment that is not saved on the db. Id: ${id}`,
+          `StarkbankWebhookController: Starkbank reported on a payment that is not saved on the db. Id: ${id}`
         );
         return;
       }
@@ -41,11 +41,11 @@ export default function buildStarkbankWebhookController(): RequestHandler {
       logger.error({
         level: 'error',
         message: `StarkbankWebhookController: Could not process webhook. Id: ${id}`,
-        error,
+        error
       });
       res.status(500).json({
         error,
-        message: 'Error: (Please notify at vago.visus@pm.me)',
+        message: 'Error: (Please notify at vago.visus@pm.me)'
       });
     }
   };

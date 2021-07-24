@@ -9,14 +9,14 @@ import {
   buildPaymentStatusController,
   buildStarkbankWebhookController,
   buildStatusController,
-  buildGenerateInvoice,
+  buildGenerateInvoice
 } from './controllers';
 
 const signer = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY, provider);
 const metaTxProxy = new ethers.Contract(
   process.env.META_TX_PROXY_ADDRESS || '',
   metaTxProxyAbi,
-  signer,
+  signer
 );
 
 const router = Router();
@@ -26,7 +26,7 @@ router.get('/v1/amount-required', buildAmountRequiredController(starkbank));
 router.get('/v1/payment-status', buildPaymentStatusController());
 router.post(
   '/v1/request-payment',
-  buildRequestPaymentController(metaTxProxy, starkbank),
+  buildRequestPaymentController(metaTxProxy, starkbank)
 );
 
 if (process.env.NODE_ENV === 'sandbox')

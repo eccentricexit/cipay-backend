@@ -16,7 +16,7 @@ function logResponseTime(req: Request, res: Response, next: NextFunction) {
     logger.log({
       level: 'info',
       message,
-      consoleLoggerOptions: { label: 'API' },
+      consoleLoggerOptions: { label: 'API' }
     });
   });
 
@@ -37,9 +37,9 @@ app.use(
 
     logger.debug(err);
     return res.status(err.status || 500).json({
-      message: err.message,
+      message: err.message
     });
-  },
+  }
 );
 
 export default app;

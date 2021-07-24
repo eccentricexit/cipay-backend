@@ -4,7 +4,7 @@ import BadRequest from '../errors/bad-request';
 import logger from '../logger';
 
 const getMessageFromJoiError = (
-  error: Joi.ValidationError,
+  error: Joi.ValidationError
 ): string | undefined => {
   if (!error.details && error.message) {
     return error.message;
@@ -28,11 +28,11 @@ interface HandlerOptions {
  */
 export const requestMiddleware = (
   handler: RequestHandler,
-  options?: HandlerOptions,
+  options?: HandlerOptions
 ): RequestHandler => async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   if (options?.validation?.body) {
     const { error } = options?.validation?.body.validate(req.body);
@@ -49,7 +49,7 @@ export const requestMiddleware = (
     logger.log({
       level: 'error',
       message: 'Error in request handler',
-      error: err,
+      error: err
     });
     next(err);
   }

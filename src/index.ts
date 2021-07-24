@@ -17,16 +17,16 @@ const safeMongooseConnection = new SafeMongooseConnection({
   debugCallback: (
     collectionName: string,
     method: string,
-    query: unknown,
+    query: unknown
   ): void => {
     const message = `${collectionName}.${method}(${util.inspect(query, {
       colors: true,
-      depth: null,
+      depth: null
     })})`;
     logger.log({
       level: 'silly',
       message,
-      consoleLoggerOptions: { label: 'MONGO' },
+      consoleLoggerOptions: { label: 'MONGO' }
     });
   },
   onStartConnection: (mongoUrl) =>
@@ -35,10 +35,10 @@ const safeMongooseConnection = new SafeMongooseConnection({
     logger.log({
       level: 'error',
       message: `Could not connect to MongoDB at ${mongoUrl}`,
-      error,
+      error
     }),
   onConnectionRetry: (mongoUrl) =>
-    logger.info(`Retrying to MongoDB at ${mongoUrl}`),
+    logger.info(`Retrying to MongoDB at ${mongoUrl}`)
 });
 
 let server: Server;
@@ -55,8 +55,8 @@ let shutdown: () => void;
       paymentRequestEngine(
         starkbank,
         provider,
-        new ethers.Contract(tokenAddr, erc20Abi, provider),
-      ),
+        new ethers.Contract(tokenAddr, erc20Abi, provider)
+      )
     );
     paymentRequestEngines.forEach((engine) => engine.start());
 
@@ -65,7 +65,7 @@ let shutdown: () => void;
     try {
       webhook = await starkbank.webhook.create({
         url: `${process.env.HOME_URL}/starkbank-webhook`,
-        subscriptions: ['brcode-payment'],
+        subscriptions: ['brcode-payment']
       });
       logger.info(`Subscribed to starkbank webhook id: ${webhook.id}`);
     } catch (error) {
@@ -87,8 +87,8 @@ let shutdown: () => void;
         paymentRequestEngines,
         {
           starkbank,
-          webhook,
-        },
+          webhook
+        }
       );
 
       // Gracefully shut down when receiving SIGINT.

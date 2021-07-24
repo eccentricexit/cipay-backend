@@ -10,21 +10,21 @@ const logTransports = [
         if (key === 'error') {
           return {
             message: (value as Error).message,
-            stack: (value as Error).stack,
+            stack: (value as Error).stack
           };
         }
         return value;
-      },
-    }),
+      }
+    })
   }),
-  new ConsoleLoggerTransport(),
+  new ConsoleLoggerTransport()
 ];
 
 const logger = createLogger({
   format: format.combine(format.timestamp()),
   transports: logTransports,
   defaultMeta: { service: 'api' },
-  level: 'silly',
+  level: 'silly'
 });
 
 export default logger;

@@ -20,7 +20,7 @@ const buildShutdown = (
   starkbankTools?: {
     starkbank: starkbankType;
     webhook: { id: string };
-  },
+  }
 ): (() => void) => async () => {
   // Running the app with npm or yarn causes SIGINT
   // to be triggered twice for whatever reason.
@@ -38,7 +38,7 @@ const buildShutdown = (
       logger.error({
         level: 'error',
         message: 'Error shutting down express',
-        error: expressErr,
+        error: expressErr
       });
     } else logger.info('Server closed.');
 
@@ -65,7 +65,7 @@ const buildShutdown = (
         logger.log({
           level: 'error',
           message: 'Error shutting closing mongo connection',
-          error: mongoErr,
+          error: mongoErr
         });
       } else {
         logger.info('Mongo connection closed successfully');

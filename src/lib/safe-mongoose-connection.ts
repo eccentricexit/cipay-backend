@@ -14,7 +14,7 @@ interface SafeMongooseConnectionOptions {
     collectionName: string,
     method: string,
     query: unknown,
-    doc: string,
+    doc: string
   ) => void;
   onStartConnection?: (mongoUrl: string) => void;
   onConnectionError?: (error: Error, mongoUrl: string) => void;
@@ -24,7 +24,7 @@ interface SafeMongooseConnectionOptions {
 const defaultMongooseConnectionOptions: ConnectionOptions = {
   useNewUrlParser: true,
   useCreateIndex: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 };
 
 /**
@@ -83,7 +83,7 @@ export default class SafeMongooseConnection {
     onClosed: (err: unknown) => void = () => {
       logger.info('Mongo connection closed.');
     },
-    force = false,
+    force = false
   ): void {
     if (this.connectionTimeout) {
       clearTimeout(this.connectionTimeout);
@@ -126,7 +126,7 @@ export default class SafeMongooseConnection {
   private onError = () => {
     if (this.options.onConnectionError) {
       const error = new Error(
-        `Could not connect to MongoDB at ${this.options.mongoUrl}`,
+        `Could not connect to MongoDB at ${this.options.mongoUrl}`
       );
       this.options.onConnectionError(error, this.options.mongoUrl);
     }

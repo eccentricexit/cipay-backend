@@ -10,33 +10,33 @@ import logger from '../logger';
  * @returns The request handler.
  */
 export default function buildGenerateInvoice(
-  starkbank: starkbankType,
+  starkbank: starkbankType
 ): RequestHandler {
   return async function GenbuildGenerateInvoice(
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<void | BrcodePreview> {
     try {
       const invoices = await starkbank.invoice.create([
         {
           amount: 1,
           taxId: '012.345.678-90',
-          name: 'Jon Snow',
-        },
+          name: 'Jon Snow'
+        }
       ]);
 
       res.status(200).json({
-        invoice: invoices[0],
+        invoice: invoices[0]
       });
     } catch (error) {
       logger.error({
         level: 'error',
         message: `Failed to generate invoice. ${JSON.stringify(req.body)}`,
-        error,
+        error
       });
       res.status(500).json({
         error,
-        message: 'Error: (Please notify at vago.visus@pm.me)',
+        message: 'Error: (Please notify at vago.visus@pm.me)'
       });
     }
   };

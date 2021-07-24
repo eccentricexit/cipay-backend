@@ -9,7 +9,7 @@ import {
   ACCEPTED_TOKEN_ADDRESSES,
   getHttpCodeForError,
   getResponseForError,
-  tokenAddrToRate,
+  tokenAddrToRate
 } from '../utils';
 import { isPayable } from './amount-required';
 import { PaymentRequest } from '../models';
@@ -35,7 +35,7 @@ const requestPaymentSchema = Joi.object().keys({
             .keys({
               name: Joi.string().required(),
               verifyingContract: Joi.string().required(),
-              version: Joi.string().required(),
+              version: Joi.string().required()
             })
             .required(),
           types: Joi.object()
@@ -44,10 +44,10 @@ const requestPaymentSchema = Joi.object().keys({
                 .items(
                   Joi.object({
                     name: Joi.string().required(),
-                    type: Joi.string().required(),
-                  }).required(),
+                    type: Joi.string().required()
+                  }).required()
                 )
-                .required(),
+                .required()
             })
             .required(),
           message: Joi.object()
@@ -57,14 +57,14 @@ const requestPaymentSchema = Joi.object().keys({
               tokenContract: Joi.string().required(),
               amount: Joi.string().required(),
               nonce: Joi.number().required(),
-              expiry: Joi.number().required(),
+              expiry: Joi.number().required()
             })
-            .required(),
+            .required()
         })
         .required(),
-      claimedAddr: Joi.string().required(),
+      claimedAddr: Joi.string().required()
     })
-    .required(),
+    .required()
 });
 
 /**
@@ -75,17 +75,17 @@ const requestPaymentSchema = Joi.object().keys({
  */
 export default function buildRequestPaymentController(
   metaTxProxy: ethers.Contract,
-  starkbank: starkbankType,
+  starkbank: starkbankType
 ): RequestHandler {
   return requestMiddleware(
     async function requestPaymentController(
       req: Request,
-      res: Response,
+      res: Response
     ): Promise<void | BrcodePreview> {
       try {
         const {
           web3: { signature, typedData, claimedAddr },
-          brcode,
+          brcode
         } = req.body;
 
         const { domain, types } = typedData;
@@ -93,7 +93,7 @@ export default function buildRequestPaymentController(
         const { tokenContract: tokenAddress, amount, to, nonce } = message;
         if (
           !ACCEPTED_TOKEN_ADDRESSES.includes(
-            ethers.utils.getAddress(tokenAddress),
+            ethers.utils.getAddress(tokenAddress)
           )
         ) {
           res
@@ -106,7 +106,7 @@ export default function buildRequestPaymentController(
           domain,
           types,
           message,
-          signature,
+          signature
         );
 
         if (ethers.utils.getAddress(claimedAddr) !== recoveredAddr) {
@@ -125,21 +125,21 @@ export default function buildRequestPaymentController(
             .json({
               ...getResponseForError(ResponseError.InvalidDestination),
               expected: process.env.WALLET_ADDRESS,
-              received: to,
+              received: to
             });
           return;
         }
 
         const [nonceExpected, previewOrError] = await Promise.all([
           metaTxProxy.nonce(recoveredAddr),
-          isPayable(starkbank, brcode),
+          isPayable(starkbank, brcode)
         ]);
 
         if (Number(nonceExpected) + 1 !== nonce) {
           res.status(getHttpCodeForError(ResponseError.InvalidNonce)).json({
             ...getResponseForError(ResponseError.InvalidNonce),
             expected: (nonceExpected + 1).toString(),
-            received: nonce,
+            received: nonce
           });
           return;
         }
@@ -152,12 +152,12 @@ export default function buildRequestPaymentController(
         }
 
         const normalizedRate = ethers.BigNumber.from(
-          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)],
+          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)]
         );
         const transferAmountRequired = normalizedRate.mul(
           ethers.BigNumber.from(previewOrError.amount).add(
-            ethers.BigNumber.from(process.env.BASE_FEE_BRL),
-          ),
+            ethers.BigNumber.from(process.env.BASE_FEE_BRL)
+          )
         );
 
         if (ethers.BigNumber.from(amount).lt(transferAmountRequired)) {
@@ -175,25 +175,25 @@ export default function buildRequestPaymentController(
           status: PaymentRequestStatus.created,
           receiverTaxId: previewOrError.taxId,
           description: previewOrError.description,
-          brcodeAmount: previewOrError.amount,
+          brcodeAmount: previewOrError.amount
         });
         await paymentRequest.save();
 
         const callData = {
           from: message.from,
           to: message.to,
-          signature,
+          signature
         };
         const callParams = {
           tokenContract: message.tokenContract,
           amount: message.amount,
           nonce: message.nonce,
-          expiry: message.expiry.toString(),
+          expiry: message.expiry.toString()
         };
 
         const tx = await metaTxProxy.executeMetaTransaction(
           callData,
-          callParams,
+          callParams
         );
 
         paymentRequest.txHash = tx.hash;
@@ -206,14 +206,14 @@ export default function buildRequestPaymentController(
         logger.error({
           level: 'error',
           message: `Failed to accept payment for request.`,
-          error,
+          error
         });
         res.status(500).json({
           error,
-          message: 'Error: (Please notify at vago.visus@pm.me)',
+          message: 'Error: (Please notify at vago.visus@pm.me)'
         });
       }
     },
-    { validation: { body: requestPaymentSchema } },
+    { validation: { body: requestPaymentSchema } }
   );
 }
