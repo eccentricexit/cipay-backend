@@ -4,7 +4,7 @@
   "description": "Pay in BRL with your crypto.",
   "author": "Visus",
   "scripts": {    
-    "start": "env-cmd -f ./.env.kovan-optimism ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
+    "start": "env-cmd -f ./.env.kovan ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
     "generate-brcode": "node -r dotenv-safe/config tools/generate-brcode",
     "lint:eslint": "eslint . --ext .ts,.tsx",
     "lint:prettier": "prettier --config .prettierrc 'src/**/*.ts' --check",

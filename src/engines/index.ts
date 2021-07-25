@@ -1,1 +1,1 @@
-export { default as paymentRequestEngine } from './payment-request';
+export { default as erc20Payment } from './erc20-payment';

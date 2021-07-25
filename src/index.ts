@@ -6,9 +6,9 @@ import logger from './logger';
 import SafeMongooseConnection from './lib/safe-mongoose-connection';
 import app from './app';
 import buildShutdown from './build-shutdown';
-import { paymentRequestEngine } from './engines';
-import { provider, starkbank } from './bootstrap';
-import { ACCEPTED_TOKEN_ADDRESSES } from './utils';
+import { erc20Payment } from './engines';
+import { ovmProvider, starkbank } from './bootstrap';
+import { OPTIMISM_ACCEPTED_TOKENS } from './utils';
 import erc20Abi from './abis/erc20.ovm.json';
 import { StarkbankWebhook } from './types';
 
@@ -49,16 +49,18 @@ function serve() {
 }
 
 let shutdown: () => void;
-(async () => {
+async function main() {
   try {
-    const paymentRequestEngines = ACCEPTED_TOKEN_ADDRESSES.map((tokenAddr) =>
-      paymentRequestEngine(
-        starkbank,
-        provider,
-        new ethers.Contract(tokenAddr, erc20Abi, provider)
+    const ovmPaymentEngines = await Promise.all(
+      OPTIMISM_ACCEPTED_TOKENS.map(async (tokenAddr) =>
+        erc20Payment(
+          starkbank,
+          ovmProvider,
+          new ethers.Contract(tokenAddr, erc20Abi, ovmProvider)
+        )
       )
     );
-    paymentRequestEngines.forEach((engine) => engine.start());
+    ovmPaymentEngines.forEach((engine) => engine.start());
 
     // Subscribe to Starbank webhooks
     let webhook: StarkbankWebhook;
@@ -84,7 +86,7 @@ let shutdown: () => void;
       shutdown = buildShutdown(
         server,
         safeMongooseConnection,
-        paymentRequestEngines,
+        ovmPaymentEngines,
         {
           starkbank,
           webhook
@@ -100,4 +102,6 @@ let shutdown: () => void;
     // Stop receiving requests shutdown engines if something fails.
     if (shutdown) shutdown();
   }
-})();
+}
+
+main();

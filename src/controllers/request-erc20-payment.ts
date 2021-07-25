@@ -6,7 +6,7 @@ import Joi from '@hapi/joi';
 import requestMiddleware from '../middleware/request-middleware';
 import { BrcodePreview, PaymentRequestStatus, ResponseError } from '../types';
 import {
-  ACCEPTED_TOKEN_ADDRESSES,
+  OPTIMISM_ACCEPTED_TOKENS,
   getHttpCodeForError,
   getResponseForError,
   tokenAddrToRate
@@ -68,17 +68,17 @@ const requestPaymentSchema = Joi.object().keys({
 });
 
 /**
- * Builds a handler to allow BRL payments with crypto.
+ * Builds a handler to allow BRL payments with erc20 tokens.
  * @param metaTxProxy The contract to relay meta txes to.
  * @param starkbank Starkbank instance with funds to pay a brcode.
  * @returns The request handler.
  */
-export default function buildRequestPaymentController(
+export default function buildRequestErc20PaymentController(
   metaTxProxy: ethers.Contract,
   starkbank: starkbankType
 ): RequestHandler {
   return requestMiddleware(
-    async function requestPaymentController(
+    async function requestErc20PaymentController(
       req: Request,
       res: Response
     ): Promise<void | BrcodePreview> {
@@ -91,8 +91,10 @@ export default function buildRequestPaymentController(
         const { domain, types } = typedData;
         const message = typedData.message as SignRequest;
         const { tokenContract: tokenAddress, amount, to, nonce } = message;
+
+        // Check if the token is accepted.
         if (
-          !ACCEPTED_TOKEN_ADDRESSES.includes(
+          !OPTIMISM_ACCEPTED_TOKENS.includes(
             ethers.utils.getAddress(tokenAddress)
           )
         ) {
@@ -109,6 +111,7 @@ export default function buildRequestPaymentController(
           signature
         );
 
+        // Validate signature.
         if (ethers.utils.getAddress(claimedAddr) !== recoveredAddr) {
           res
             .status(getHttpCodeForError(ResponseError.FailedSigValidation))
@@ -116,6 +119,7 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        // Check that the signed message sends to the right address.
         if (
           ethers.utils.getAddress(to) !==
           ethers.utils.getAddress(process.env.WALLET_ADDRESS)
@@ -135,6 +139,7 @@ export default function buildRequestPaymentController(
           isPayable(starkbank, brcode)
         ]);
 
+        // Defend against replays.
         if (Number(nonceExpected) + 1 !== nonce) {
           res.status(getHttpCodeForError(ResponseError.InvalidNonce)).json({
             ...getResponseForError(ResponseError.InvalidNonce),
@@ -144,6 +149,7 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        // Validate invoice.
         if (typeof previewOrError === 'string') {
           res
             .status(getHttpCodeForError(previewOrError))
@@ -160,6 +166,7 @@ export default function buildRequestPaymentController(
           )
         );
 
+        // Check that the amount of tokens paid covers the invoice.
         if (ethers.BigNumber.from(amount).lt(transferAmountRequired)) {
           res
             .status(getHttpCodeForError(ResponseError.NotEnoughFunds))
@@ -167,6 +174,7 @@ export default function buildRequestPaymentController(
           return;
         }
 
+        // Create payment request.
         const paymentRequest = new PaymentRequest({
           brcode,
           payerAddr: recoveredAddr,
@@ -191,11 +199,13 @@ export default function buildRequestPaymentController(
           expiry: message.expiry.toString()
         };
 
+        // Propagate transaction.
         const tx = await metaTxProxy.executeMetaTransaction(
           callData,
           callParams
         );
 
+        // Save tx hash.
         paymentRequest.txHash = tx.hash;
         paymentRequest.status = PaymentRequestStatus.submitted;
         await paymentRequest.save();

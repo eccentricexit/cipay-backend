@@ -3,7 +3,7 @@ import { Request, RequestHandler, Response } from 'express';
 
 import { ResponseError, StarkbankBalance, BrcodePreview } from '../types';
 import {
-  ACCEPTED_TOKEN_ADDRESSES,
+  OPTIMISM_ACCEPTED_TOKENS,
   getHttpCodeForError,
   getResponseForError,
   tokenAddrToDecimals,
@@ -23,7 +23,7 @@ export default function buildAmountRequiredController(
     const { brcode, tokenAddress } = req.query;
     try {
       if (
-        !ACCEPTED_TOKEN_ADDRESSES.includes(
+        !OPTIMISM_ACCEPTED_TOKENS.includes(
           ethers.utils.getAddress(String(tokenAddress))
         )
       ) {

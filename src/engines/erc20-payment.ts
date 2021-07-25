@@ -6,17 +6,15 @@ import logger from '../logger';
 import { PaymentRequest, SyncBlock } from '../models';
 import { IPaymentRequest } from '../models/payment-request';
 import { BrcodePayment, PaymentRequestStatus, Engine } from '../types';
-import { ACCEPTED_TOKEN_ADDRESSES } from '../utils';
 
 /**
  * Returns an engine that watches the blockchain for erc20 transfers to a wallet and, if valid, creates a payment for the corresponding brcode.
  * @param starkbank Authenticated starbank instance.
  * @param provider JsonRpcProvider to watch for transfer logs.
  * @param erc20 The erc20 token contract this engine handles.
- * @param wallet The wallet to watch for transfers to.
  * @returns Payment request engine
  */
-export default function paymentRequestEngine(
+export default function erc20Payment(
   starkbank: starkbankType,
   provider: ethers.providers.JsonRpcProvider,
   erc20: ethers.Contract
@@ -49,17 +47,10 @@ export default function paymentRequestEngine(
         running = true;
         logger.info(`Checking logs ${JSON.stringify(interval)}`);
         logger.info(`Current blocknum ${await provider.getBlockNumber()}`);
-        const transferEvents = (
-          await provider.getLogs({
-            ...erc20.filters.Transfer(null, process.env.WALLET_ADDRESS),
-            ...interval
-          })
-        ).filter(
-          (e) =>
-            e.address.toLowerCase() ===
-              process.env.META_TX_PROXY_ADDRESS.toLowerCase() ||
-            ACCEPTED_TOKEN_ADDRESSES.includes(e.address)
-        );
+        const transferEvents = await provider.getLogs({
+          ...erc20.filters.Transfer(null, process.env.WALLET_ADDRESS),
+          ...interval
+        });
 
         const processesedRequests: IPaymentRequest[] = [];
         await Promise.allSettled(
@@ -71,7 +62,7 @@ export default function paymentRequestEngine(
 
               if (!paymentRequest) {
                 logger.warn(
-                  `PaymentRequestEngine: No corresponding entry for deposit found in db, ignoring. TxHash: ${transferEvent.transactionHash}`
+                  `erc20Payment: No corresponding entry for deposit found in db, ignoring. TxHash: ${transferEvent.transactionHash}`
                 );
                 return;
               }
@@ -81,7 +72,7 @@ export default function paymentRequestEngine(
                 String(PaymentRequestStatus.submitted)
               ) {
                 logger.warn(
-                  `PaymentRequestEngine: Payment request in an invalid state, ignoring. Status: ${paymentRequest.status} expected ${PaymentRequestStatus.submitted}, id: ${paymentRequest.id}`
+                  `erc20Payment: Payment request in an invalid state, ignoring. Status: ${paymentRequest.status} expected ${PaymentRequestStatus.submitted}, id: ${paymentRequest.id}`
                 );
                 return;
               }
@@ -108,7 +99,7 @@ export default function paymentRequestEngine(
             } catch (error) {
               logger.error({
                 level: 'error',
-                message: `PaymentRequestEngine: Error fetching payment for txHash ${transferEvent.transactionHash}`,
+                message: `erc20Payment: Error fetching payment for txHash ${transferEvent.transactionHash}`,
                 error
               });
             }
@@ -131,7 +122,7 @@ export default function paymentRequestEngine(
         interval.toBlock = interval.fromBlock + blockInterval;
         syncBlock.lastBlock = interval.fromBlock - 1;
         syncBlock = await syncBlock.save();
-        await delay(Number(process.env.PAYMENT_ENGINE_DELAY_MILLISECONDS));
+        await delay(Number(process.env.PAYMENT_ENGINES_DELAY_MILLISECONDS));
         running = false;
       }
     },

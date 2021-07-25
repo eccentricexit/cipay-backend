@@ -3,12 +3,12 @@ version: "3"
 services:
   mongo.cipay:
     image: mongo:4.4.4
-    container_name: mongo.cipay-${CHAIN_ID}
+    container_name: mongo.cipay
     restart: always
     networks:
       - app-network
     volumes:
-      - ./data/db-${CHAIN_ID}:/data/db-${CHAIN_ID}
+      - ./data/db:/data/db
     ports:
       - "${DB_PORT}:${DB_PORT}"  
 

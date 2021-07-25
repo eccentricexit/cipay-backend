@@ -5,7 +5,7 @@ import { starkbank, provider } from './bootstrap';
 import metaTxProxyAbi from './abis/metaTxProxy.ovm.json';
 import {
   buildAmountRequiredController,
-  buildRequestPaymentController,
+  buildRequestErc20PaymentController,
   buildPaymentStatusController,
   buildStarkbankWebhookController,
   buildStatusController,
@@ -25,8 +25,8 @@ router.get('/v1/status', buildStatusController());
 router.get('/v1/amount-required', buildAmountRequiredController(starkbank));
 router.get('/v1/payment-status', buildPaymentStatusController());
 router.post(
-  '/v1/request-payment',
-  buildRequestPaymentController(metaTxProxy, starkbank)
+  '/v1/request-erc20-payment',
+  buildRequestErc20PaymentController(metaTxProxy, starkbank)
 );
 
 if (process.env.NODE_ENV === 'sandbox')

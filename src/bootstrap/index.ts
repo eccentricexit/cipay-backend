@@ -1,2 +1,2 @@
 export { default as starkbank } from './starkbank';
-export { default as provider } from './web3';
+export { default as ovmProvider } from './web3';
