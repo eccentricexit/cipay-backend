@@ -14,14 +14,15 @@ import { BrcodePayment, PaymentRequestStatus, Engine } from '../types';
  * @param erc20 The erc20 token contract this engine handles.
  * @returns Payment request engine
  */
-export default function erc20Payment(
+export default async function erc20Payment(
   starkbank: starkbankType,
   provider: ethers.providers.JsonRpcProvider,
   erc20: ethers.Contract
-): Engine {
+): Promise<Engine> {
   let shutdownRequested = false;
   let running = false;
-  const SYNC_BLOCK_KEY = `syncblock-${erc20.address}`;
+  const { chainId } = await provider.getNetwork();
+  const SYNC_BLOCK_KEY = `syncblock-${chainId}-${erc20.address}`;
 
   return {
     start: async function start() {

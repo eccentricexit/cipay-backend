@@ -9,7 +9,7 @@ declare namespace NodeJS {
     OPTIMSIM_GATEWAY: string;
     WALLET_ADDRESS: string;
     META_TX_PROXY_ADDRESS: string;
-    RELAYER_PRIVATE_KEY: string;
+    RELAYER_KEY: string;
     OPTIMISM_ACCEPTED_TOKENS: string;
     BRL_TOKEN_EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;

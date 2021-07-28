@@ -7,8 +7,8 @@ import SafeMongooseConnection from './lib/safe-mongoose-connection';
 import app from './app';
 import buildShutdown from './build-shutdown';
 import { erc20Payment } from './engines';
-import { ovmProvider, starkbank } from './bootstrap';
-import { OPTIMISM_ACCEPTED_TOKENS } from './utils';
+import { arbitrumProvider, starkbank } from './bootstrap';
+import { ARBITRUM_ACCEPTED_TOKENS } from './utils';
 import erc20Abi from './abis/erc20.ovm.json';
 import { StarkbankWebhook } from './types';
 
@@ -51,16 +51,16 @@ function serve() {
 let shutdown: () => void;
 async function main() {
   try {
-    const ovmPaymentEngines = await Promise.all(
-      OPTIMISM_ACCEPTED_TOKENS.map(async (tokenAddr) =>
+    const arbitrumPaymentEngines = await Promise.all(
+      ARBITRUM_ACCEPTED_TOKENS.map(async (tokenAddr) =>
         erc20Payment(
           starkbank,
-          ovmProvider,
-          new ethers.Contract(tokenAddr, erc20Abi, ovmProvider)
+          arbitrumProvider,
+          new ethers.Contract(tokenAddr, erc20Abi, arbitrumProvider)
         )
       )
     );
-    ovmPaymentEngines.forEach((engine) => engine.start());
+    arbitrumPaymentEngines.forEach((engine) => engine.start());
 
     // Subscribe to Starbank webhooks
     let webhook: StarkbankWebhook;
@@ -86,7 +86,7 @@ async function main() {
       shutdown = buildShutdown(
         server,
         safeMongooseConnection,
-        ovmPaymentEngines,
+        arbitrumPaymentEngines,
         {
           starkbank,
           webhook

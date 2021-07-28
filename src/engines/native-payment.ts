@@ -1,21 +1,26 @@
 import { ethers } from 'ethers';
 import starkbankType from 'starkbank';
 import delay from 'delay';
+import EthCrypto from 'eth-crypto';
 
 import logger from '../logger';
 import { PaymentRequest, SyncBlock } from '../models';
 import { IPaymentRequest } from '../models/payment-request';
 import { BrcodePayment, PaymentRequestStatus, Engine } from '../types';
+import { isPayable } from '../controllers/amount-required';
+import { chainInfo } from '../utils';
 
 /**
  * Returns an engine that watches the blockchain for native currency transfers to a wallet and, if valid, creates a payment for the corresponding brcode.
  * @param starkbank Authenticated starbank instance.
  * @param provider JsonRpcProvider to watch for transfers.
+ * @param paymentNotifier The payment notifier contract.
  * @returns Payment request engine
  */
 export default async function nativePayment(
   starkbank: starkbankType,
-  provider: ethers.providers.JsonRpcProvider
+  provider: ethers.providers.JsonRpcProvider,
+  paymentNotifier: ethers.Contract
 ): Promise<Engine> {
   let shutdownRequested = false;
   let running = false;
@@ -47,38 +52,54 @@ export default async function nativePayment(
         logger.info(`Checking incoming transfers ${JSON.stringify(interval)}`);
         logger.info(`Current blocknum ${await provider.getBlockNumber()}`);
 
-        // TODO: Detect transfers to the wallet.
-        const transfers = [];
-
-        // TODO: Decript data and fetch payment request.
+        const paymentNotificationEvents = await provider.getLogs({
+          ...paymentNotifier.filters.PaymentReceived(),
+          ...interval
+        });
 
         const processesedRequests: IPaymentRequest[] = [];
         await Promise.allSettled(
-          transferEvents.map(async (transferEvent) => {
+          paymentNotificationEvents.map(async (paymentNotificationEvent) => {
             try {
-              const paymentRequest = await PaymentRequest.findOne({
-                txHash: transferEvent.transactionHash
+              const parsedLog = paymentNotifier.interface.parseLog(
+                paymentNotificationEvent
+              );
+              const payerAddr = parsedLog.args._payer;
+              const brcode = await EthCrypto.decryptWithPrivateKey(
+                process.env.DECRYPTOR_KEY,
+                EthCrypto.cipher.parse(parsedLog.args._data)
+              );
+
+              // TODO: Need to parse this in BRL.
+              const rate = parsedLog.args._agreedBasePrice;
+              const paymentRequest = new PaymentRequest({
+                txHash: paymentNotificationEvent.transactionHash,
+                brcode,
+                payerAddr,
+                coin: 'native',
+                rate,
+                status: PaymentRequestStatus.confirmed,
+                chainId: chainId
               });
-
-              if (!paymentRequest) {
-                logger.warn(
-                  `erc20Payment: No corresponding entry for deposit found in db, ignoring. TxHash: ${transferEvent.transactionHash}`
-                );
-                return;
-              }
-
-              if (
-                String(paymentRequest.status) !==
-                String(PaymentRequestStatus.submitted)
-              ) {
-                logger.warn(
-                  `erc20Payment: Payment request in an invalid state, ignoring. Status: ${paymentRequest.status} expected ${PaymentRequestStatus.submitted}, id: ${paymentRequest.id}`
-                );
-                return;
-              }
-
-              paymentRequest.status = PaymentRequestStatus.confirmed;
               await paymentRequest.save();
+
+              const previewOrError = await isPayable(starkbank, brcode);
+
+              // Validate invoice.
+              if (typeof previewOrError === 'string') {
+                // TODO: If it cannot be paid, return the funds.
+                paymentRequest.status = PaymentRequestStatus.failed;
+                paymentRequest.failReason = previewOrError;
+                paymentRequest.save();
+                return;
+              }
+
+              paymentRequest.receiverTaxId = previewOrError.taxId;
+              paymentRequest.description = previewOrError.description;
+              paymentRequest.brcodeAmount = previewOrError.amount;
+              await paymentRequest.save();
+
+              // TODO: Check if amount paid covers amount required on price agreed.
 
               processesedRequests.push(paymentRequest);
               const payment = {
@@ -99,14 +120,14 @@ export default async function nativePayment(
             } catch (error) {
               logger.error({
                 level: 'error',
-                message: `erc20Payment: Error fetching payment for txHash ${transferEvent.transactionHash}`,
+                message: `erc20Payment: Error fetching payment for txHash ${paymentNotificationEvent.transactionHash}`,
                 error
               });
             }
           })
         );
 
-        const eventLastBlock = transfers.reduce(
+        const eventLastBlock = paymentNotificationEvents.reduce(
           (acc, curr) => (curr.blockNumber > acc ? curr.blockNumber : acc),
           0
         );

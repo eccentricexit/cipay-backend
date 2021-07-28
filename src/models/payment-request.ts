@@ -27,6 +27,10 @@ export interface IPaymentRequest extends ITimeStampedDocument {
   starkbankPaymentId: string;
   /** The last status reported by starkbank */
   brcodeStatus: string;
+  /** The chain ID used for this request */
+  chainId: number;
+  /** Reason why this request failed */
+  failReason: string;
 }
 
 type IPaymentRequestModel = Model<IPaymentRequest>;
@@ -47,7 +51,9 @@ const schema = new Schema<IPaymentRequest>({
     unique: true,
     sparse: true
   },
-  brcodeStatus: { type: String, index: true, sparse: true }
+  brcodeStatus: { type: String, index: true, sparse: true },
+  chainId: { type: String, required: true, index: true, sparse: true },
+  failReason: { type: String }
 });
 
 // Add timestamp plugin for createdAt and updatedAt in miliseconds from epoch

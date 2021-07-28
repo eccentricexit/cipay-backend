@@ -24,6 +24,13 @@ interface SignRequest {
   expiry: number;
 }
 
+interface Domain {
+  name: string;
+  version: string;
+  chainId: number;
+  verifyingContract: string;
+}
+
 const requestPaymentSchema = Joi.object().keys({
   brcode: Joi.string().required(),
   web3: Joi.object()
@@ -34,8 +41,9 @@ const requestPaymentSchema = Joi.object().keys({
           domain: Joi.object()
             .keys({
               name: Joi.string().required(),
-              verifyingContract: Joi.string().required(),
-              version: Joi.string().required()
+              version: Joi.string().required(),
+              chainId: Joi.number().required(),
+              verifyingContract: Joi.string().required()
             })
             .required(),
           types: Joi.object()
@@ -69,12 +77,12 @@ const requestPaymentSchema = Joi.object().keys({
 
 /**
  * Builds a handler to allow BRL payments with erc20 tokens.
- * @param metaTxProxy The contract to relay meta txes to.
+ * @param metaTxRelay The contract to relay meta txes to.
  * @param starkbank Starkbank instance with funds to pay a brcode.
  * @returns The request handler.
  */
 export default function buildRequestErc20PaymentController(
-  metaTxProxy: ethers.Contract,
+  metaTxRelay: ethers.Contract,
   starkbank: starkbankType
 ): RequestHandler {
   return requestMiddleware(
@@ -88,7 +96,8 @@ export default function buildRequestErc20PaymentController(
           brcode
         } = req.body;
 
-        const { domain, types } = typedData;
+        const { types } = typedData;
+        const domain = typedData.domain as Domain;
         const message = typedData.message as SignRequest;
         const { tokenContract: tokenAddress, amount, to, nonce } = message;
 
@@ -135,7 +144,7 @@ export default function buildRequestErc20PaymentController(
         }
 
         const [nonceExpected, previewOrError] = await Promise.all([
-          metaTxProxy.nonce(recoveredAddr),
+          metaTxRelay.nonce(recoveredAddr),
           isPayable(starkbank, brcode)
         ]);
 
@@ -183,7 +192,8 @@ export default function buildRequestErc20PaymentController(
           status: PaymentRequestStatus.created,
           receiverTaxId: previewOrError.taxId,
           description: previewOrError.description,
-          brcodeAmount: previewOrError.amount
+          brcodeAmount: previewOrError.amount,
+          chainId: domain.chainId
         });
         await paymentRequest.save();
 
@@ -200,7 +210,7 @@ export default function buildRequestErc20PaymentController(
         };
 
         // Propagate transaction.
-        const tx = await metaTxProxy.executeMetaTransaction(
+        const tx = await metaTxRelay.executeMetaTransaction(
           callData,
           callParams
         );

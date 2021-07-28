@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "description": "Pay in BRL with your crypto.",
   "author": "Visus",
-  "scripts": {    
+  "scripts": {
     "start": "env-cmd -f ./.env.kovan ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
     "generate-brcode": "node -r dotenv-safe/config tools/generate-brcode",
     "lint:eslint": "eslint . --ext .ts,.tsx",
@@ -48,6 +48,7 @@
     "cors": "^2.8.5",
     "delay": "^5.0.0",
     "dotenv-safe": "^8.2.0",
+    "eth-crypto": "^2.0.0",
     "ethers": "^5.0.25",
     "express": "^4.17.1",
     "helmet": "^4.4.1",
