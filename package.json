@@ -3,8 +3,10 @@
   "version": "1.1.0",
   "description": "Pay in BRL with your crypto.",
   "author": "Visus",
-  "scripts": {    
-    "start": "env-cmd -f ./.env.kovan-optimism ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
+  "scripts": {
+    "start:optimism-kovan": "env-cmd -f ./.env.optimism-kovan ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
+    "start:arbitrum-rinkeby": "env-cmd -f ./.env.arbitrum-rinkeby ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
+    "start:arbitrum": "env-cmd -f ./.env.arbitrum ts-node --transpile-only --files -r dotenv-safe/config src/index.ts",
     "generate-brcode": "node -r dotenv-safe/config tools/generate-brcode",
     "lint:eslint": "eslint . --ext .ts,.tsx",
     "lint:prettier": "prettier --config .prettierrc 'src/**/*.ts' --check",
@@ -52,7 +54,7 @@
     "express": "^4.17.1",
     "helmet": "^4.4.1",
     "mongoose": "^5.12.5",
-    "starkbank": "^2.2.0",
+    "starkbank": "^2.10.1",
     "tslib": "~2.0.3",
     "winston": "^3.3.3",
     "winston-transport": "^4.4.0"

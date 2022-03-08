@@ -6,7 +6,7 @@ import Joi from '@hapi/joi';
 import requestMiddleware from '../middleware/request-middleware';
 import { BrcodePreview, PaymentRequestStatus, ResponseError } from '../types';
 import {
-  ACCEPTED_TOKEN_ADDRESSES,
+  ACCEPTED_TOKENS,
   getHttpCodeForError,
   getResponseForError,
   tokenAddrToRate
@@ -24,7 +24,7 @@ interface SignRequest {
   expiry: number;
 }
 
-const requestPaymentSchema = Joi.object().keys({
+const requestERC20PaymentSchema = Joi.object().keys({
   brcode: Joi.string().required(),
   web3: Joi.object()
     .keys({
@@ -68,7 +68,7 @@ const requestPaymentSchema = Joi.object().keys({
 });
 
 /**
- * Builds a handler to allow BRL payments with crypto.
+ * Builds a handler to allow BRL payments with erc20 tokens.
  * @param metaTxProxy The contract to relay meta txes to.
  * @param starkbank Starkbank instance with funds to pay a brcode.
  * @returns The request handler.
@@ -91,11 +91,7 @@ export default function buildRequestPaymentController(
         const { domain, types } = typedData;
         const message = typedData.message as SignRequest;
         const { tokenContract: tokenAddress, amount, to, nonce } = message;
-        if (
-          !ACCEPTED_TOKEN_ADDRESSES.includes(
-            ethers.utils.getAddress(tokenAddress)
-          )
-        ) {
+        if (!ACCEPTED_TOKENS.includes(ethers.utils.getAddress(tokenAddress))) {
           res
             .status(getHttpCodeForError(ResponseError.InvalidToken))
             .json(getResponseForError(ResponseError.InvalidToken));
@@ -214,6 +210,6 @@ export default function buildRequestPaymentController(
         });
       }
     },
-    { validation: { body: requestPaymentSchema } }
+    { validation: { body: requestERC20PaymentSchema } }
   );
 }

@@ -8,7 +8,7 @@ import app from './app';
 import buildShutdown from './build-shutdown';
 import { paymentRequestEngine } from './engines';
 import { provider, starkbank } from './bootstrap';
-import { ACCEPTED_TOKEN_ADDRESSES } from './utils';
+import { ACCEPTED_TOKENS } from './utils';
 import erc20Abi from './abis/erc20.ovm.json';
 import { StarkbankWebhook } from './types';
 
@@ -49,22 +49,14 @@ function serve() {
 }
 
 let shutdown: () => void;
-(async () => {
+async function main() {
   try {
-    const paymentRequestEngines = ACCEPTED_TOKEN_ADDRESSES.map((tokenAddr) =>
-      paymentRequestEngine(
-        starkbank,
-        provider,
-        new ethers.Contract(tokenAddr, erc20Abi, provider)
-      )
-    );
-    paymentRequestEngines.forEach((engine) => engine.start());
-
     // Subscribe to Starbank webhooks
     let webhook: StarkbankWebhook;
     try {
+      const url = `${process.env.HOME_URL}/starkbank-webhook`;
       webhook = await starkbank.webhook.create({
-        url: `${process.env.HOME_URL}/starkbank-webhook`,
+        url,
         subscriptions: ['brcode-payment']
       });
       logger.info(`Subscribed to starkbank webhook id: ${webhook.id}`);
@@ -76,6 +68,14 @@ let shutdown: () => void;
         logger.warn(`This url is already registered in another webhook`);
       } else throw error;
     }
+
+    const paymentRequestEngines = ACCEPTED_TOKENS.map((tokenAddr) =>
+      paymentRequestEngine(
+        starkbank,
+        provider,
+        new ethers.Contract(tokenAddr, erc20Abi, provider)
+      )
+    );
 
     safeMongooseConnection.connect((mongoUrl) => {
       logger.info(`Connected to MongoDB at ${mongoUrl}`);
@@ -94,10 +94,14 @@ let shutdown: () => void;
       // Gracefully shut down when receiving SIGINT.
       process.on('SIGINT', shutdown);
     });
+
+    // paymentRequestEngines.forEach((engine) => engine.start());
   } catch (error) {
     logger.error(error);
 
     // Stop receiving requests shutdown engines if something fails.
     if (shutdown) shutdown();
   }
-})();
+}
+
+main();

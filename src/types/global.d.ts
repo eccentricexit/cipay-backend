@@ -10,7 +10,7 @@ declare namespace NodeJS {
     WALLET_ADDRESS: string;
     META_TX_PROXY_ADDRESS: string;
     RELAYER_PRIVATE_KEY: string;
-    ACCEPTED_TOKEN_ADDRESSES: string;
+    ACCEPTED_TOKENS: string;
     BRL_TOKEN_EXCHANGE_RATES: string;
     DECIMAL_PLACES: string;
     BASE_FEE_BRL: string;

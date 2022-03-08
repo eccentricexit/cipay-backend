@@ -6,7 +6,7 @@ import logger from '../logger';
 import { PaymentRequest, SyncBlock } from '../models';
 import { IPaymentRequest } from '../models/payment-request';
 import { BrcodePayment, PaymentRequestStatus, Engine } from '../types';
-import { ACCEPTED_TOKEN_ADDRESSES } from '../utils';
+import { ACCEPTED_TOKENS } from '../utils';
 
 /**
  * Returns an engine that watches the blockchain for erc20 transfers to a wallet and, if valid, creates a payment for the corresponding brcode.
@@ -27,6 +27,7 @@ export default function paymentRequestEngine(
 
   return {
     start: async function start() {
+      console.info('starting engine');
       running = true;
       let syncBlock = await SyncBlock.findOne({ id: SYNC_BLOCK_KEY });
       if (!syncBlock) {
@@ -58,7 +59,7 @@ export default function paymentRequestEngine(
           (e) =>
             e.address.toLowerCase() ===
               process.env.META_TX_PROXY_ADDRESS.toLowerCase() ||
-            ACCEPTED_TOKEN_ADDRESSES.includes(e.address)
+            ACCEPTED_TOKENS.includes(e.address)
         );
 
         const processesedRequests: IPaymentRequest[] = [];
