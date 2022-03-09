@@ -84,7 +84,6 @@ export default function buildRequestERC20PaymentController(
       res: Response
     ): Promise<void | BrcodePreview> {
       try {
-        logger.warn('Got payment request');
         const {
           web3: { signature, typedData, claimedAddr },
           brcode
@@ -211,13 +210,10 @@ export default function buildRequestERC20PaymentController(
           expiry: message.expiry.toString()
         };
 
-        logger.warn('Sending tx');
         const tx = await metaTxProxy.executeMetaTransaction(
           callData,
           callParams
         );
-
-        console.warn('tx', tx);
 
         paymentRequest.txHash = tx.hash;
         paymentRequest.status = PaymentRequestStatus.submitted;

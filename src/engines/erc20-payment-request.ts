@@ -62,9 +62,6 @@ export default function paymentRequestEngine(
             ACCEPTED_TOKENS.includes(e.address)
         );
 
-        logger.warn(`erc20 ${erc20.address}`);
-        logger.warn(`logs received ${transferEvents.length}`);
-
         const processesedRequests: IPaymentRequest[] = [];
         await Promise.allSettled(
           transferEvents.map(async (transferEvent) => {
