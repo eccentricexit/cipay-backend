@@ -69,12 +69,9 @@ export default function paymentRequestEngine(
         await Promise.allSettled(
           transferEvents.map(async (transferEvent) => {
             try {
-              console.info('processing event', transferEvent);
               const paymentRequest = await PaymentRequest.findOne({
                 txHash: transferEvent.transactionHash
               });
-
-              console.info('got paymentRequest', paymentRequest);
 
               if (!paymentRequest) {
                 logger.warn(
@@ -96,8 +93,6 @@ export default function paymentRequestEngine(
               paymentRequest.status = PaymentRequestStatus.confirmed;
               await paymentRequest.save();
 
-              console.info('paymentRequest confirmed', paymentRequest);
-
               processesedRequests.push(paymentRequest);
               const payment = {
                 brcode: paymentRequest.brcode,
@@ -108,8 +103,6 @@ export default function paymentRequestEngine(
               const brcodePayment: BrcodePayment = (
                 await starkbank.brcodePayment.create([payment])
               )[0];
-
-              console.info('brcodePayment sent', brcodePayment);
 
               paymentRequest.status = PaymentRequestStatus.processing;
               paymentRequest.starkbankPaymentId = brcodePayment.id;
@@ -125,8 +118,6 @@ export default function paymentRequestEngine(
             }
           })
         );
-
-        console.info('promises settled, continuing');
 
         const eventLastBlock = transferEvents.reduce(
           (acc, curr) => (curr.blockNumber > acc ? curr.blockNumber : acc),
@@ -144,7 +135,7 @@ export default function paymentRequestEngine(
         interval.toBlock = interval.fromBlock + blockInterval;
         syncBlock.lastBlock = interval.fromBlock - 1;
         syncBlock = await syncBlock.save();
-        await delay(Number(process.env.PAYMENT_ENGINE_DELAY_MILLISECONDS));
+        await delay(Number(process.env.PAYMENT_ENGINES_DELAY_MILLISECONDS));
         running = false;
       }
     },
