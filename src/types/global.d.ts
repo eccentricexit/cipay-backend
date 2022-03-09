@@ -11,10 +11,11 @@ declare namespace NodeJS {
     META_TX_PROXY_ADDRESS: string;
     RELAYER_PRIVATE_KEY: string;
     ACCEPTED_TOKENS: string;
-    BRL_TOKEN_EXCHANGE_RATES: string;
+    BRL_TOKEN: string;
     DECIMAL_PLACES: string;
-    BASE_FEE_BRL: string;
+    BASE_FEE_BRL_CENTS: string;
     TOKEN_SYMBOLS: string;
+    CIPAY_FEE_PCT: string;
 
     // Starkbank
     TAX_ID: string;

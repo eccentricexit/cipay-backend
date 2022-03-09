@@ -95,7 +95,7 @@ async function main() {
       process.on('SIGINT', shutdown);
     });
 
-    // paymentRequestEngines.forEach((engine) => engine.start());
+    paymentRequestEngines.forEach((engine) => engine.start());
   } catch (error) {
     logger.error(error);
 

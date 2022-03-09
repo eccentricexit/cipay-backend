@@ -27,7 +27,7 @@ export default function paymentRequestEngine(
 
   return {
     start: async function start() {
-      console.info('starting engine');
+      logger.info('Starting engine');
       running = true;
       let syncBlock = await SyncBlock.findOne({ id: SYNC_BLOCK_KEY });
       if (!syncBlock) {
@@ -48,8 +48,8 @@ export default function paymentRequestEngine(
       logger.info(`Starting interval: ${JSON.stringify(interval)}`);
       while (!shutdownRequested) {
         running = true;
-        logger.info(`Checking logs ${JSON.stringify(interval)}`);
-        logger.info(`Current blocknum ${await provider.getBlockNumber()}`);
+        // logger.info(`Checking logs ${JSON.stringify(interval)}`);
+        // logger.info(`Current blocknum ${await provider.getBlockNumber()}`);
         const transferEvents = (
           await provider.getLogs({
             ...erc20.filters.Transfer(null, process.env.WALLET_ADDRESS),
@@ -62,13 +62,19 @@ export default function paymentRequestEngine(
             ACCEPTED_TOKENS.includes(e.address)
         );
 
+        logger.warn(`erc20 ${erc20.address}`);
+        logger.warn(`logs received ${transferEvents.length}`);
+
         const processesedRequests: IPaymentRequest[] = [];
         await Promise.allSettled(
           transferEvents.map(async (transferEvent) => {
             try {
+              console.info('processing event', transferEvent);
               const paymentRequest = await PaymentRequest.findOne({
                 txHash: transferEvent.transactionHash
               });
+
+              console.info('got paymentRequest', paymentRequest);
 
               if (!paymentRequest) {
                 logger.warn(
@@ -90,6 +96,8 @@ export default function paymentRequestEngine(
               paymentRequest.status = PaymentRequestStatus.confirmed;
               await paymentRequest.save();
 
+              console.info('paymentRequest confirmed', paymentRequest);
+
               processesedRequests.push(paymentRequest);
               const payment = {
                 brcode: paymentRequest.brcode,
@@ -100,6 +108,8 @@ export default function paymentRequestEngine(
               const brcodePayment: BrcodePayment = (
                 await starkbank.brcodePayment.create([payment])
               )[0];
+
+              console.info('brcodePayment sent', brcodePayment);
 
               paymentRequest.status = PaymentRequestStatus.processing;
               paymentRequest.starkbankPaymentId = brcodePayment.id;
@@ -115,6 +125,8 @@ export default function paymentRequestEngine(
             }
           })
         );
+
+        console.info('promises settled, continuing');
 
         const eventLastBlock = transferEvents.reduce(
           (acc, curr) => (curr.blockNumber > acc ? curr.blockNumber : acc),

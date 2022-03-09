@@ -11,7 +11,7 @@ import {
   tokenAddrToSymbol
 } from '../utils';
 import logger from '../logger';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 
 export default function buildAmountRequiredController(
   starkbank: starkbankType
@@ -39,15 +39,37 @@ export default function buildAmountRequiredController(
         return;
       }
 
+      const amountBRLInCents = previewOrError.amount;
+
+      // Convert to bignumber and add 18 decimal places.
+      const amountBRL = BigNumber.from(amountBRLInCents).mul(
+        BigNumber.from(10).pow(BigNumber.from(16))
+      );
       const tokenRate =
         tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))];
-      const normalizedRate = ethers.BigNumber.from(tokenRate);
+      const normalizedRate = BigNumber.from(tokenRate.toString());
 
-      const transferAmountRequired = normalizedRate.mul(
-        ethers.BigNumber.from(previewOrError.amount).add(
-          ethers.BigNumber.from(process.env.BASE_FEE_BRL)
-        )
+      // Minimum fee per payment: 1 BRL.
+      const baseFee = BigNumber.from(process.env.BASE_FEE_BRL_CENTS).mul(
+        BigNumber.from(10).pow(BigNumber.from(16))
       );
+
+      // Amount of DAI required.
+      const BASIS_POINTS = BigNumber.from(10000);
+      const cipayFee = amountBRL
+        .mul(
+          BigNumber.from(process.env.CIPAY_FEE_PCT)
+            .mul(BASIS_POINTS)
+            .div(BigNumber.from(100))
+        )
+        .div(BASIS_POINTS);
+      const amountBRLDue = amountBRL.add(baseFee).add(cipayFee);
+
+      // Add 18 decimal places to avoid precision losses.
+      const PRECISION = BigNumber.from(10).pow(BigNumber.from(18));
+      const transferAmountRequired = amountBRLDue
+        .mul(PRECISION)
+        .div(normalizedRate);
 
       res.status(200).json({
         ...previewOrError,

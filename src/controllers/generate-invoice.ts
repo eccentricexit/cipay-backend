@@ -19,7 +19,7 @@ export default function buildGenerateInvoice(
     try {
       const invoices = await starkbank.invoice.create([
         {
-          amount: 1,
+          amount: 550, // 5.50 BRL
           taxId: '012.345.678-90',
           name: 'Jon Snow'
         }

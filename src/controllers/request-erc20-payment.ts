@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { Request, RequestHandler, Response } from 'express';
 import starkbankType from 'starkbank';
 import Joi from '@hapi/joi';
@@ -35,7 +35,8 @@ const requestERC20PaymentSchema = Joi.object().keys({
             .keys({
               name: Joi.string().required(),
               verifyingContract: Joi.string().required(),
-              version: Joi.string().required()
+              version: Joi.string().required(),
+              chainId: Joi.string().required()
             })
             .required(),
           types: Joi.object()
@@ -73,16 +74,17 @@ const requestERC20PaymentSchema = Joi.object().keys({
  * @param starkbank Starkbank instance with funds to pay a brcode.
  * @returns The request handler.
  */
-export default function buildRequestPaymentController(
+export default function buildRequestERC20PaymentController(
   metaTxProxy: ethers.Contract,
   starkbank: starkbankType
 ): RequestHandler {
   return requestMiddleware(
-    async function requestPaymentController(
+    async function requestERC20PaymentController(
       req: Request,
       res: Response
     ): Promise<void | BrcodePreview> {
       try {
+        logger.warn('Got payment request');
         const {
           web3: { signature, typedData, claimedAddr },
           brcode
@@ -147,14 +149,36 @@ export default function buildRequestPaymentController(
           return;
         }
 
-        const normalizedRate = ethers.BigNumber.from(
-          tokenAddrToRate[ethers.utils.getAddress(tokenAddress)]
+        const amountBRLInCents = previewOrError.amount;
+
+        // Convert to bignumber and add 18 decimal places.
+        const amountBRL = BigNumber.from(amountBRLInCents).mul(
+          BigNumber.from(10).pow(BigNumber.from(16))
         );
-        const transferAmountRequired = normalizedRate.mul(
-          ethers.BigNumber.from(previewOrError.amount).add(
-            ethers.BigNumber.from(process.env.BASE_FEE_BRL)
+        const tokenRate =
+          tokenAddrToRate[ethers.utils.getAddress(String(tokenAddress))];
+        const normalizedRate = BigNumber.from(tokenRate.toString());
+
+        // Minimum fee per payment: 1 BRL.
+        const baseFee = BigNumber.from(process.env.BASE_FEE_BRL_CENTS).mul(
+          BigNumber.from(10).pow(BigNumber.from(16))
+        );
+        // Amount of DAI required.
+        const BASIS_POINTS = BigNumber.from(10000);
+        const cipayFee = amountBRL
+          .mul(
+            BigNumber.from(process.env.CIPAY_FEE_PCT)
+              .mul(BASIS_POINTS)
+              .div(BigNumber.from(100))
           )
-        );
+          .div(BASIS_POINTS);
+        const amountBRLDue = amountBRL.add(baseFee).add(cipayFee);
+
+        // Add 18 decimal places to avoid precision losses.
+        const PRECISION = BigNumber.from(10).pow(BigNumber.from(18));
+        const transferAmountRequired = amountBRLDue
+          .mul(PRECISION)
+          .div(normalizedRate);
 
         if (ethers.BigNumber.from(amount).lt(transferAmountRequired)) {
           res
@@ -187,14 +211,18 @@ export default function buildRequestPaymentController(
           expiry: message.expiry.toString()
         };
 
+        logger.warn('Sending tx');
         const tx = await metaTxProxy.executeMetaTransaction(
           callData,
           callParams
         );
 
+        console.warn('tx', tx);
+
         paymentRequest.txHash = tx.hash;
         paymentRequest.status = PaymentRequestStatus.submitted;
         await paymentRequest.save();
+
         tx.wait();
 
         res.status(200).json(paymentRequest);
